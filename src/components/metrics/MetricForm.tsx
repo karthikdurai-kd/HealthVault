@@ -10,32 +10,19 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import MetricDatePicker from "./MetricDatePicker";
 import MetricTypeSelect from "./MetricTypeSelect";
 import MetricValueInput from "./MetricValueInput";
 import MetricNotesInput from "./MetricNotesInput";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MetricFormProps {
   metricTypes: string[];
   onClose: () => void;
   onMetricAdded?: () => void;
 }
-
-// Create a function to get the Supabase client
-const getSupabaseClient = () => {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Supabase environment variables are missing");
-    return null;
-  }
-  
-  return createClient(supabaseUrl, supabaseAnonKey);
-};
 
 const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) => {
   const [date, setDate] = useState<Date>(new Date());
@@ -47,13 +34,6 @@ const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      toast.error("Database connection not available. Please check your environment variables.");
-      setSaving(false);
-      return;
-    }
 
     // Insert into Supabase
     const { error } = await supabase

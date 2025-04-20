@@ -1,22 +1,8 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Create a function to get the Supabase client
-const getSupabaseClient = () => {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Supabase environment variables are missing");
-    return null;
-  }
-  
-  return createClient(supabaseUrl, supabaseAnonKey);
-};
+import { supabase } from "@/integrations/supabase/client";
 
 const metricOptions = [
   { value: "bloodPressure", label: "Blood Pressure" },
@@ -52,26 +38,25 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
       setLoading(true);
       setError(null);
       
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        setError("Database connection not available. Please check your environment variables.");
-        setLoading(false);
-        return;
+      try {
+        const { data: metrics, error: fetchError } = await supabase
+          .from("health_metrics")
+          .select("*")
+          .eq("type", typeMap[selectedMetric])
+          .order("date", { ascending: true });
+        
+        if (!fetchError && metrics) {
+          setData(metrics);
+        } else {
+          console.error("Error fetching metrics:", fetchError);
+          setData([]);
+          setError("Failed to load health metrics");
+        }
+      } catch (e) {
+        console.error("Exception fetching metrics:", e);
+        setError("An error occurred connecting to the database");
       }
       
-      const { data: metrics, error: fetchError } = await supabase
-        .from("health_metrics")
-        .select("*")
-        .eq("type", typeMap[selectedMetric])
-        .order("date", { ascending: true });
-      
-      if (!fetchError && metrics) {
-        setData(metrics);
-      } else {
-        console.error("Error fetching metrics:", fetchError);
-        setData([]);
-        setError("Failed to load health metrics");
-      }
       setLoading(false);
     }
     fetchMetrics();
