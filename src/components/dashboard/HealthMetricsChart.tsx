@@ -1,17 +1,22 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Properly check for environment variables and provide fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-// Only create the client if we have valid credentials
-const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+// Create a function to get the Supabase client
+const getSupabaseClient = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase environment variables are missing");
+    return null;
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey);
+};
 
 const metricOptions = [
   { value: "bloodPressure", label: "Blood Pressure" },
@@ -47,6 +52,7 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
       setLoading(true);
       setError(null);
       
+      const supabase = getSupabaseClient();
       if (!supabase) {
         setError("Database connection not available. Please check your environment variables.");
         setLoading(false);

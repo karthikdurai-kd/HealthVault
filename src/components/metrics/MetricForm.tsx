@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -38,14 +37,18 @@ interface MetricFormProps {
   onMetricAdded?: () => void;
 }
 
-// Properly check for environment variables and provide fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-// Only create the client if we have valid credentials
-const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+// Create a function to get the Supabase client
+const getSupabaseClient = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase environment variables are missing");
+    return null;
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey);
+};
 
 const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) => {
   const [date, setDate] = useState<Date>(new Date());
@@ -58,6 +61,7 @@ const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) =>
     e.preventDefault();
     setSaving(true);
 
+    const supabase = getSupabaseClient();
     if (!supabase) {
       toast.error("Database connection not available. Please check your environment variables.");
       setSaving(false);
@@ -188,7 +192,7 @@ const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) =>
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={saving || !supabase}>
+            <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save Metric"}
             </Button>
           </DialogFooter>

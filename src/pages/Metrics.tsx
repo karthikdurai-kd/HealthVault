@@ -1,5 +1,4 @@
-
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -22,14 +21,18 @@ const metricTypes = [
   "Oxygen Saturation"
 ];
 
-// Properly check for environment variables and provide fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-
-// Only create the client if we have valid credentials
-const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+// Create a function to get the Supabase client
+const getSupabaseClient = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase environment variables are missing");
+    return null;
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey);
+};
 
 const Metrics = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -37,13 +40,26 @@ const Metrics = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [connectionAvailable, setConnectionAvailable] = useState(false);
+
+  // Check if Supabase connection is available
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    setConnectionAvailable(!!supabase);
+    if (!supabase) {
+      setError("Database connection not available. Please check your environment variables.");
+    }
+  }, []);
 
   // Fetch metrics from Supabase on mount/refresh
   useEffect(() => {
     async function fetchMetrics() {
+      if (!connectionAvailable) return;
+      
       setLoading(true);
       setError(null);
       
+      const supabase = getSupabaseClient();
       if (!supabase) {
         setError("Database connection not available. Please check your environment variables.");
         setLoading(false);
@@ -65,8 +81,11 @@ const Metrics = () => {
       }
       setLoading(false);
     }
-    fetchMetrics();
-  }, [refreshKey]);
+    
+    if (connectionAvailable) {
+      fetchMetrics();
+    }
+  }, [refreshKey, connectionAvailable]);
 
   // Utility to get latest metric value (by type)
   function getLatestMetric(type: string) {
@@ -100,7 +119,8 @@ const Metrics = () => {
             <Button 
               className="gap-2" 
               onClick={() => setIsFormOpen(true)}
-              disabled={!supabase}
+              disabled={!connectionAvailable}
+              title={!connectionAvailable ? "Database connection not available" : "Log new metric"}
             >
               <Plus className="h-4 w-4" />
               Log New Metric
@@ -111,6 +131,11 @@ const Metrics = () => {
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
+              {!connectionAvailable && (
+                <p className="mt-2 text-sm">
+                  Please make sure your Supabase URL and Anon Key environment variables are properly set.
+                </p>
+              )}
             </div>
           )}
           
