@@ -5,7 +5,6 @@ import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -14,38 +13,57 @@ const metricOptions = [
   { value: "bloodPressure", label: "Blood Pressure" },
   { value: "bloodSugar", label: "Blood Sugar" },
   { value: "cholesterol", label: "Cholesterol" },
+  { value: "weight", label: "Weight" },
+  { value: "hemoglobin", label: "Hemoglobin" }
 ];
 
-const HealthMetricsChart = () => {
+// Used to map frontend keys to backend 'type' field
+const typeMap: { [key: string]: string } = {
+  bloodPressure: "Blood Pressure",
+  bloodSugar: "Blood Sugar",
+  cholesterol: "Cholesterol",
+  weight: "Weight",
+  hemoglobin: "Hemoglobin",
+};
+
+interface HealthMetricsChartProps {
+  forceRefresh?: number; // used to reload data if needed
+}
+
+const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh }) => {
   const [selectedMetric, setSelectedMetric] = useState("bloodPressure");
   const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const chartRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch health data from Supabase
   useEffect(() => {
     async function fetchMetrics() {
-      // Replace 'health_metrics' with your actual Supabase table
+      setLoading(true);
       const { data: metrics, error } = await supabase
         .from("health_metrics")
         .select("*")
+        .eq("type", typeMap[selectedMetric])
         .order("date", { ascending: true });
       if (!error && metrics) {
         setData(metrics);
       } else {
         setData([]);
       }
+      setLoading(false);
     }
     fetchMetrics();
-  }, []);
+  }, [selectedMetric, forceRefresh]);
 
   // Draw D3 line chart when data or metric changes
   useEffect(() => {
-    if (!data.length || !chartRef.current) return;
+    if (!data.length || !chartRef.current) {
+      chartRef.current && (chartRef.current.innerHTML = "");
+      return;
+    }
 
-    // Clear previous SVG
     chartRef.current.innerHTML = "";
 
-    // Prepare D3
     const margin = { top: 16, right: 30, bottom: 40, left: 48 };
     const width = chartRef.current.offsetWidth || 500;
     const height = 300;
@@ -57,7 +75,6 @@ const HealthMetricsChart = () => {
       case "bloodPressure":
         yData = data.map((d) => {
           if (typeof d.value === "string" && d.value.includes("/")) {
-            // Parse "120/80" format as average value
             const parts = d.value.split("/");
             return (parseInt(parts[0], 10) + parseInt(parts[1], 10)) / 2;
           }
@@ -83,10 +100,8 @@ const HealthMetricsChart = () => {
       .x(([date]) => x(date))
       .y(([, value]) => y(value));
 
-    // Data for line
     const lineData = xData.map((d, i) => [d, yData[i]] as [Date, number]);
 
-    // Create SVG
     const svg = d3
       .select(chartRef.current)
       .append("svg")
@@ -159,7 +174,12 @@ const HealthMetricsChart = () => {
       </CardHeader>
       <CardContent className="pt-2">
         <div ref={chartRef} className="h-[300px] w-full" />
-        {data.length === 0 && (
+        {loading && (
+          <div className="text-center text-muted-foreground mt-6">
+            Loading...
+          </div>
+        )}
+        {!loading && data.length === 0 && (
           <div className="text-center text-muted-foreground mt-6">
             No health metrics available.
           </div>

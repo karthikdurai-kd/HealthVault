@@ -29,29 +29,51 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { createClient } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 interface MetricFormProps {
   metricTypes: string[];
   onClose: () => void;
+  onMetricAdded?: () => void;
 }
 
-const MetricForm = ({ metricTypes, onClose }: MetricFormProps) => {
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) => {
   const [date, setDate] = useState<Date>(new Date());
   const [metricType, setMetricType] = useState<string>("");
   const [value, setValue] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Here you would normally save the data
-    console.log({
-      date,
-      metricType,
-      value,
-      notes
-    });
-    
+    setSaving(true);
+
+    // Insert into Supabase
+    const { error } = await supabase
+      .from("health_metrics")
+      .insert([
+        {
+          date: date.toISOString(),
+          type: metricType,
+          value: value,
+          notes: notes,
+        },
+      ]);
+
+    setSaving(false);
+
+    if (error) {
+      toast.error("Failed to save metric. Please try again.");
+      return;
+    }
+
+    toast.success("Health metric saved");
+    if (onMetricAdded) onMetricAdded();
     onClose();
   };
 
@@ -81,6 +103,7 @@ const MetricForm = ({ metricTypes, onClose }: MetricFormProps) => {
                         "w-full justify-start text-left font-normal",
                         !date && "text-muted-foreground"
                       )}
+                      type="button"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? format(date, "PPP") : "Select date"}
@@ -104,7 +127,7 @@ const MetricForm = ({ metricTypes, onClose }: MetricFormProps) => {
                 Metric
               </Label>
               <div className="col-span-3">
-                <Select value={metricType} onValueChange={setMetricType}>
+                <Select value={metricType} onValueChange={setMetricType} required>
                   <SelectTrigger id="metric-type">
                     <SelectValue placeholder="Select metric type" />
                   </SelectTrigger>
@@ -126,6 +149,7 @@ const MetricForm = ({ metricTypes, onClose }: MetricFormProps) => {
               </Label>
               <Input
                 id="value"
+                required
                 placeholder="e.g., 120/80, 98 mg/dL"
                 className="col-span-3"
                 value={value}
@@ -152,7 +176,7 @@ const MetricForm = ({ metricTypes, onClose }: MetricFormProps) => {
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit">Save Metric</Button>
+            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Metric"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

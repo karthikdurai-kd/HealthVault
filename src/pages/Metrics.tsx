@@ -1,52 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, FileText } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MetricForm from "@/components/metrics/MetricForm";
+import { createClient } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
-// Sample metric data
-const metrics = [
-  {
-    id: 1,
-    date: "2025-04-18",
-    type: "Blood Pressure",
-    value: "120/80 mmHg",
-    notes: "Morning reading, after medication"
-  },
-  {
-    id: 2,
-    date: "2025-04-18",
-    type: "Blood Sugar",
-    value: "98 mg/dL",
-    notes: "Fasting"
-  },
-  {
-    id: 3,
-    date: "2025-04-17",
-    type: "Weight",
-    value: "78 kg",
-    notes: ""
-  },
-  {
-    id: 4,
-    date: "2025-04-16",
-    type: "Blood Pressure",
-    value: "118/78 mmHg",
-    notes: "Evening reading"
-  },
-  {
-    id: 5,
-    date: "2025-04-15",
-    type: "Cholesterol",
-    value: "185 mg/dL",
-    notes: "Lab test result"
-  }
-];
-
+// These must match the backend
 const metricTypes = [
   "Blood Pressure",
   "Blood Sugar",
@@ -57,10 +21,51 @@ const metricTypes = [
   "Heart Rate",
   "Oxygen Saturation"
 ];
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const Metrics = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Fetch metrics from Supabase on mount/refresh
+  useEffect(() => {
+    async function fetchMetrics() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("health_metrics")
+        .select("*")
+        .order("date", { ascending: false });
+      if (error) {
+        setMetrics([]);
+        toast.error("Failed to fetch metrics from backend.");
+      } else {
+        setMetrics(data || []);
+      }
+      setLoading(false);
+    }
+    fetchMetrics();
+  }, [refreshKey]);
+
+  // Utility to get latest metric value (by type)
+  function getLatestMetric(type: string) {
+    const filtered = metrics.filter((m) => m.type === type);
+    if (!filtered.length) return null;
+    return filtered[0];
+  }
+
+  function formatRecency(dateStr: string) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff <= 0) return "Today";
+    if (diff === 1) return "Yesterday";
+    return `${diff} days ago`;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -82,49 +87,29 @@ const Metrics = () => {
           
           {/* Metrics Overview Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Blood Pressure</CardTitle>
-                <CardDescription>Latest reading</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">120/80 <span className="text-sm font-normal text-muted-foreground">mmHg</span></div>
-                <p className="text-xs text-muted-foreground">Last recorded: Today</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Blood Sugar</CardTitle>
-                <CardDescription>Latest reading</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">98 <span className="text-sm font-normal text-muted-foreground">mg/dL</span></div>
-                <p className="text-xs text-muted-foreground">Last recorded: Today</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Weight</CardTitle>
-                <CardDescription>Latest reading</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">78 <span className="text-sm font-normal text-muted-foreground">kg</span></div>
-                <p className="text-xs text-muted-foreground">Last recorded: Yesterday</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Cholesterol</CardTitle>
-                <CardDescription>Latest reading</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">185 <span className="text-sm font-normal text-muted-foreground">mg/dL</span></div>
-                <p className="text-xs text-muted-foreground">Last recorded: 3 days ago</p>
-              </CardContent>
-            </Card>
+            {["Blood Pressure", "Blood Sugar", "Weight", "Cholesterol"].map((type) => {
+              const latest = getLatestMetric(type);
+              return (
+                <Card key={type}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">{type}</CardTitle>
+                    <CardDescription>Latest reading</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {latest?.value ?? "-"}
+                      {type === "Blood Pressure" && <span className="text-sm font-normal text-muted-foreground"> mmHg</span>}
+                      {type === "Blood Sugar" && <span className="text-sm font-normal text-muted-foreground"> mg/dL</span>}
+                      {type === "Weight" && <span className="text-sm font-normal text-muted-foreground"> kg</span>}
+                      {type === "Cholesterol" && <span className="text-sm font-normal text-muted-foreground"> mg/dL</span>}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Last recorded: {latest ? formatRecency(latest.date) : "-"}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
           
           {/* Metric History */}
@@ -132,7 +117,7 @@ const Metrics = () => {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Metric History</span>
-                <Button variant="outline" size="sm" className="gap-1">
+                <Button variant="outline" size="sm" className="gap-1" disabled>
                   <FileText className="h-4 w-4" />
                   Export
                 </Button>
@@ -152,16 +137,25 @@ const Metrics = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrics.map((metric) => (
-                    <TableRow key={metric.id}>
-                      <TableCell>{new Date(metric.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{metric.type}</TableCell>
-                      <TableCell>{metric.value}</TableCell>
-                      <TableCell>{metric.notes || "-"}</TableCell>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={4}>Loading...</TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    metrics.map((metric) => (
+                      <TableRow key={metric.id}>
+                        <TableCell>{new Date(metric.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{metric.type}</TableCell>
+                        <TableCell>{metric.value}</TableCell>
+                        <TableCell>{metric.notes || "-"}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
+              {!loading && metrics.length === 0 && (
+                <div className="text-center text-muted-foreground mt-6">No health metrics found. Add your first entry!</div>
+              )}
             </CardContent>
           </Card>
           
@@ -170,6 +164,7 @@ const Metrics = () => {
             <MetricForm 
               metricTypes={metricTypes} 
               onClose={() => setIsFormOpen(false)}
+              onMetricAdded={() => setRefreshKey(k => k + 1)}
             />
           )}
         </main>
