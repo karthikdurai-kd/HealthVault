@@ -1,13 +1,17 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Properly check for environment variables and provide fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+// Only create the client if we have valid credentials
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 const metricOptions = [
   { value: "bloodPressure", label: "Blood Pressure" },
@@ -34,21 +38,33 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
   const [selectedMetric, setSelectedMetric] = useState("bloodPressure");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch health data from Supabase
   useEffect(() => {
     async function fetchMetrics() {
       setLoading(true);
-      const { data: metrics, error } = await supabase
+      setError(null);
+      
+      if (!supabase) {
+        setError("Database connection not available. Please check your environment variables.");
+        setLoading(false);
+        return;
+      }
+      
+      const { data: metrics, error: fetchError } = await supabase
         .from("health_metrics")
         .select("*")
         .eq("type", typeMap[selectedMetric])
         .order("date", { ascending: true });
-      if (!error && metrics) {
+      
+      if (!fetchError && metrics) {
         setData(metrics);
       } else {
+        console.error("Error fetching metrics:", fetchError);
         setData([]);
+        setError("Failed to load health metrics");
       }
       setLoading(false);
     }
@@ -179,7 +195,12 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
             Loading...
           </div>
         )}
-        {!loading && data.length === 0 && (
+        {!loading && error && (
+          <div className="text-center text-red-500 mt-6">
+            {error}
+          </div>
+        )}
+        {!loading && !error && data.length === 0 && (
           <div className="text-center text-muted-foreground mt-6">
             No health metrics available.
           </div>

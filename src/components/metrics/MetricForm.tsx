@@ -38,9 +38,14 @@ interface MetricFormProps {
   onMetricAdded?: () => void;
 }
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Properly check for environment variables and provide fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+// Only create the client if we have valid credentials
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) => {
   const [date, setDate] = useState<Date>(new Date());
@@ -52,6 +57,12 @@ const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+
+    if (!supabase) {
+      toast.error("Database connection not available. Please check your environment variables.");
+      setSaving(false);
+      return;
+    }
 
     // Insert into Supabase
     const { error } = await supabase
@@ -68,6 +79,7 @@ const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) =>
     setSaving(false);
 
     if (error) {
+      console.error("Error saving metric:", error);
       toast.error("Failed to save metric. Please try again.");
       return;
     }
@@ -176,7 +188,9 @@ const MetricForm = ({ metricTypes, onClose, onMetricAdded }: MetricFormProps) =>
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Metric"}</Button>
+            <Button type="submit" disabled={saving || !supabase}>
+              {saving ? "Saving..." : "Save Metric"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -21,26 +21,44 @@ const metricTypes = [
   "Heart Rate",
   "Oxygen Saturation"
 ];
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Properly check for environment variables and provide fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+// Only create the client if we have valid credentials
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 const Metrics = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch metrics from Supabase on mount/refresh
   useEffect(() => {
     async function fetchMetrics() {
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      
+      if (!supabase) {
+        setError("Database connection not available. Please check your environment variables.");
+        setLoading(false);
+        return;
+      }
+      
+      const { data, error: fetchError } = await supabase
         .from("health_metrics")
         .select("*")
         .order("date", { ascending: false });
-      if (error) {
+      
+      if (fetchError) {
+        console.error("Error fetching metrics:", fetchError);
         setMetrics([]);
+        setError("Failed to load metrics from database");
         toast.error("Failed to fetch metrics from backend.");
       } else {
         setMetrics(data || []);
@@ -79,11 +97,22 @@ const Metrics = () => {
                 Track and monitor your vital health parameters
               </p>
             </div>
-            <Button className="gap-2" onClick={() => setIsFormOpen(true)}>
+            <Button 
+              className="gap-2" 
+              onClick={() => setIsFormOpen(true)}
+              disabled={!supabase}
+            >
               <Plus className="h-4 w-4" />
               Log New Metric
             </Button>
           </div>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
           
           {/* Metrics Overview Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -141,6 +170,12 @@ const Metrics = () => {
                     <TableRow>
                       <TableCell colSpan={4}>Loading...</TableCell>
                     </TableRow>
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-red-500">
+                        Error loading data
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     metrics.map((metric) => (
                       <TableRow key={metric.id}>
@@ -153,7 +188,7 @@ const Metrics = () => {
                   )}
                 </TableBody>
               </Table>
-              {!loading && metrics.length === 0 && (
+              {!loading && !error && metrics.length === 0 && (
                 <div className="text-center text-muted-foreground mt-6">No health metrics found. Add your first entry!</div>
               )}
             </CardContent>
