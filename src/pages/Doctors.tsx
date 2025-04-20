@@ -1,0 +1,154 @@
+
+import React, { useState } from 'react';
+import Header from "@/components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Phone, MapPin, Calendar, User, StarIcon, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import DoctorCard from "@/components/doctors/DoctorCard";
+
+// Sample doctor data
+const doctors = [
+  {
+    id: 1,
+    name: "Dr. Sarah Johnson",
+    specialty: "Cardiologist",
+    hospital: "City Heart Hospital",
+    address: "123 Medical Center Blvd",
+    phone: "(555) 123-4567",
+    lastVisit: "Mar 15, 2025",
+    nextAppointment: "May 20, 2025"
+  },
+  {
+    id: 2,
+    name: "Dr. Michael Chen",
+    specialty: "Endocrinologist",
+    hospital: "Metro Diabetes Clinic",
+    address: "456 Health Parkway",
+    phone: "(555) 234-5678",
+    lastVisit: "Feb 8, 2025",
+    nextAppointment: null
+  },
+  {
+    id: 3,
+    name: "Dr. Emily Rodriguez",
+    specialty: "Neurologist",
+    hospital: "Brain & Spine Center",
+    address: "789 Neurology Drive",
+    phone: "(555) 345-6789",
+    lastVisit: "Apr 2, 2025",
+    nextAppointment: "Jun 12, 2025"
+  }
+];
+
+const Doctors = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const filteredDoctors = doctors.filter(doctor => 
+    doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 space-y-4 p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Doctors & Visits</h1>
+              <p className="text-muted-foreground">
+                Manage your healthcare providers and appointments
+              </p>
+            </div>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add New Doctor
+            </Button>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search doctors, specialties, or hospitals..."
+              className="w-full bg-background pl-8 md:w-1/2 lg:w-1/3"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          {/* Doctors List */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredDoctors.map(doctor => (
+              <DoctorCard key={doctor.id} doctor={doctor} />
+            ))}
+          </div>
+          
+          {/* Empty State */}
+          {filteredDoctors.length === 0 && (
+            <Card className="border-dashed">
+              <CardContent className="pt-6 text-center">
+                <User className="mx-auto h-8 w-8 text-muted-foreground" />
+                <h3 className="mt-3 text-lg font-medium">No doctors found</h3>
+                <p className="mb-4 mt-1 text-sm text-muted-foreground">
+                  Try adjusting your search or add a new doctor.
+                </p>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add New Doctor
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Upcoming Appointments Section */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Upcoming Appointments</CardTitle>
+              <CardDescription>
+                Your scheduled doctor visits
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {doctors
+                  .filter(doctor => doctor.nextAppointment)
+                  .map(doctor => (
+                    <div key={doctor.id} className="flex items-center space-x-4 rounded-lg border p-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-health-blue-100">
+                        <Calendar className="h-5 w-5 text-health-blue-700" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="font-medium leading-none">
+                          {doctor.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {doctor.specialty} • {doctor.hospital}
+                        </p>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {doctor.nextAppointment}
+                      </div>
+                    </div>
+                  ))}
+                  
+                {doctors.filter(doctor => doctor.nextAppointment).length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    No upcoming appointments scheduled
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Doctors;
