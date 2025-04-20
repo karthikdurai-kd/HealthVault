@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,34 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Health dashboard specific colors
+				health: {
+					primary: '#1A73E8',
+					secondary: '#34A853',
+					accent: '#5F6368',
+					warning: '#FBBC04',
+					danger: '#EA4335',
+					light: '#F8F9FA',
+					dark: '#202124',
+					'blue-100': '#E8F0FE',
+					'blue-200': '#C6DAFC',
+					'blue-300': '#A4C2F7',
+					'blue-400': '#82AAF3',
+					'blue-500': '#5F92EE',
+					'blue-600': '#4285F4',
+					'blue-700': '#1A73E8',
+					'blue-800': '#185ABC',
+					'blue-900': '#174EA6',
+					'green-100': '#E6F4EA',
+					'green-200': '#CEEAD6',
+					'green-300': '#A8DAB5',
+					'green-400': '#81C995',
+					'green-500': '#5BB974',
+					'green-600': '#34A853',
+					'green-700': '#188038',
+					'green-800': '#137333',
+					'green-900': '#0D652D',
 				}
 			},
 			borderRadius: {
@@ -84,11 +113,16 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-gentle': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-gentle': 'pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
 			}
 		}
 	},
