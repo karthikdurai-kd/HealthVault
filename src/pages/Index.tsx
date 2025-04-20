@@ -7,8 +7,11 @@ import HealthMetricsChart from "@/components/dashboard/HealthMetricsChart";
 import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 import RecentMedications from "@/components/dashboard/RecentMedications";
 import { BellRing, Upload, Plus } from "lucide-react";
+import { useLatestMetrics } from "@/hooks/useLatestMetrics";
 
 const Index = () => {
+  const { metrics, loading } = useLatestMetrics();
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -48,7 +51,7 @@ const Index = () => {
           </div>
           
           {/* Health Stats Grid */}
-          <HealthStatsGrid />
+          <HealthStatsGrid latestMetrics={metrics} loading={loading}/>
           
           {/* Charts and data section */}
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
