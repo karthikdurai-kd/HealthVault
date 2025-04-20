@@ -37,14 +37,14 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
     async function fetchMetrics() {
       setLoading(true);
       setError(null);
-      
+
       try {
         const { data: metrics, error: fetchError } = await supabase
           .from("health_metrics")
           .select("*")
           .eq("type", typeMap[selectedMetric])
           .order("date", { ascending: true });
-        
+
         if (!fetchError && metrics) {
           setData(metrics);
         } else {
@@ -56,7 +56,7 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
         console.error("Exception fetching metrics:", e);
         setError("An error occurred connecting to the database");
       }
-      
+
       setLoading(false);
     }
     fetchMetrics();

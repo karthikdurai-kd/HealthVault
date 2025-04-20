@@ -34,13 +34,13 @@ const Metrics = () => {
     async function fetchMetrics() {
       setLoading(true);
       setError(null);
-      
+
       try {
         const { data, error: fetchError } = await supabase
           .from("health_metrics")
           .select("*")
           .order("date", { ascending: false });
-        
+
         if (fetchError) {
           console.error("Error fetching metrics:", fetchError);
           setMetrics([]);
@@ -53,10 +53,10 @@ const Metrics = () => {
         console.error("Exception fetching metrics:", e);
         setError("An error occurred connecting to the database");
       }
-      
+
       setLoading(false);
     }
-    
+
     fetchMetrics();
   }, [refreshKey]);
 
