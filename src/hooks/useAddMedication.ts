@@ -8,7 +8,6 @@ export interface MedicationInput {
   dosage: string;
   frequency: string;
   time: string;
-  last_taken?: string;
 }
 
 export function useAddMedication() {
@@ -17,9 +16,8 @@ export function useAddMedication() {
 
   return useMutation({
     mutationFn: async (medication: MedicationInput) => {
-      // Validate required fields
       if (!medication.name || !medication.dosage || !medication.frequency || !medication.time) {
-        throw new Error("Required fields are missing");
+        throw new Error("All fields are required");
       }
 
       const { data, error } = await supabase

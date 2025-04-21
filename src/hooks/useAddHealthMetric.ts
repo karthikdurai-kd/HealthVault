@@ -16,9 +16,8 @@ export function useAddHealthMetric() {
 
   return useMutation({
     mutationFn: async (metric: HealthMetricInput) => {
-      // Validate required fields
       if (!metric.type || !metric.value || !metric.date) {
-        throw new Error("Required fields are missing");
+        throw new Error("Type, value, and date are required");
       }
 
       const { data, error } = await supabase

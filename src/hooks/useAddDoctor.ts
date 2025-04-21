@@ -9,8 +9,6 @@ export interface DoctorInput {
   hospital: string;
   address: string;
   phone: string;
-  last_visit?: string | null;
-  next_appointment?: string | null;
 }
 
 export function useAddDoctor() {
@@ -19,9 +17,8 @@ export function useAddDoctor() {
 
   return useMutation({
     mutationFn: async (doctor: DoctorInput) => {
-      // Validate required fields
       if (!doctor.name || !doctor.specialty || !doctor.hospital || !doctor.address || !doctor.phone) {
-        throw new Error("Required fields are missing");
+        throw new Error("All fields are required");
       }
 
       const { data, error } = await supabase

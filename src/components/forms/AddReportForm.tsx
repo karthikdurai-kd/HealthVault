@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -76,33 +77,57 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     },
   });
 
+  // Reset form when dialog opens/closes
+  React.useEffect(() => {
+    if (!open) {
+      // Small delay to ensure the form is reset after the dialog animation completes
+      setTimeout(() => {
+        form.reset();
+        setUploadedFileUrl(null);
+      }, 300);
+    }
+  }, [open, form]);
+
   // Upload file to Supabase Storage bucket 'reports'
   const uploadFile = async (file: File) => {
     setUploading(true);
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const { data, error } = await supabase.storage
-      .from("reports")
-      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from("reports")
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
 
-    if (error) {
-      alert("Error uploading file: " + error.message);
+      if (error) {
+        console.error("Error uploading file:", error);
+        setUploading(false);
+        return null;
+      }
+      
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage.from("reports").getPublicUrl(fileName);
+      
+      setUploading(false);
+      setUploadedFileUrl(publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error("Error in file upload:", error);
       setUploading(false);
       return null;
     }
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage.from("reports").getPublicUrl(fileName);
-
-    setUploading(false);
-    setUploadedFileUrl(publicUrlData.publicUrl);
-    return publicUrlData.publicUrl;
   };
 
   const onSubmit = async (data: FormValues) => {
     let file_url = uploadedFileUrl;
-    if (data.file && data.file.length > 0) {
-      const uploadedUrl = await uploadFile(data.file[0]);
-      if (!uploadedUrl) return;
+    
+    // Only upload if there's a file and it hasn't been uploaded yet
+    if (data.file && data.file instanceof File) {
+      setUploading(true);
+      const uploadedUrl = await uploadFile(data.file);
+      if (!uploadedUrl) {
+        setUploading(false);
+        return;
+      }
       file_url = uploadedUrl;
     }
 
@@ -255,7 +280,7 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
             <FormField
               control={form.control}
               name="file"
-              render={({ field }) => (
+              render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
                   <FormLabel>Upload Report File</FormLabel>
                   <FormControl>
@@ -264,7 +289,7 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
                       accept=".pdf,image/png,image/jpeg"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) field.onChange([file]);
+                        if (file) onChange(file);
                       }}
                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
                       file:rounded-full file:border-0
@@ -272,9 +297,10 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
                       file:bg-health-blue-100 file:text-health-blue-700
                       hover:file:bg-health-blue-200
                       "
+                      {...fieldProps}
                     />
-                    {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
                   </FormControl>
+                  {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
                   <FormMessage />
                 </FormItem>
               )}

@@ -50,7 +50,10 @@ const Reports = () => {
                 Store and access your medical reports and test results
               </p>
             </div>
-            {/* Removed Upload Report button */}
+            <Button onClick={() => setShowReportForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Upload Report
+            </Button>
           </div>
 
           {/* Search and Filter */}
@@ -87,7 +90,8 @@ const Reports = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <div>Loading...</div>
-            ) : filteredReports.map((report) => (
+            ) : filteredReports.length > 0 ? (
+              filteredReports.map((report) => (
                 <Card key={report.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
@@ -106,7 +110,7 @@ const Reports = () => {
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{report.doctor.name}</span>
+                        <span>{report.doctor?.name || "Unknown Doctor"}</span>
                       </div>
                       <div className="text-sm text-muted-foreground ml-6">{report.hospital}</div>
                     </div>
@@ -120,31 +124,29 @@ const Reports = () => {
                       disabled={!report.file_url}
                     >
                       <Download className="h-4 w-4" />
-                      Download Report
+                      {report.file_url ? "View Report" : "No File Available"}
                     </Button>
                   </CardFooter>
                 </Card>
-              ))}
+              ))
+            ) : (
+              <Card className="border-dashed md:col-span-2 lg:col-span-3">
+                <CardContent className="pt-6 text-center">
+                  <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <h3 className="mt-3 text-lg font-medium">No reports found</h3>
+                  <p className="mb-4 mt-1 text-sm text-muted-foreground">
+                    {searchTerm || selectedType !== "All Types"
+                      ? "Try adjusting your search or filters."
+                      : "Upload medical reports to keep track of your test results."}
+                  </p>
+                  <Button onClick={() => setShowReportForm(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Upload Report
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
-
-          {/* Empty State */}
-          {filteredReports.length === 0 && (
-            <Card className="border-dashed">
-              <CardContent className="pt-6 text-center">
-                <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
-                <h3 className="mt-3 text-lg font-medium">No reports found</h3>
-                <p className="mb-4 mt-1 text-sm text-muted-foreground">
-                  {searchTerm || selectedType !== "All Types"
-                    ? "Try adjusting your search or filters."
-                    : "Upload medical reports to keep track of your test results."}
-                </p>
-                <Button onClick={() => setShowReportForm(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Upload Report
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Add Report Form */}
           <AddReportForm open={showReportForm} onOpenChange={setShowReportForm} />

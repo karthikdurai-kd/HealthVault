@@ -10,6 +10,7 @@ export interface ReportInput {
   hospital: string;
   type: string;
   has_file: boolean;
+  file_url?: string | null;
 }
 
 export function useAddReport() {
@@ -40,6 +41,7 @@ export function useAddReport() {
       });
     },
     onError: (error) => {
+      console.error("Error adding report:", error);
       toast({
         title: "Error",
         description: `Failed to add report: ${error.message}`,
