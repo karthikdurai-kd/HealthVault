@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
-import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
@@ -81,6 +80,31 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
     }
   }, [open, form]);
 
+  // Create storage bucket if it doesn't exist 
+  useEffect(() => {
+    if (open) {
+      const createBucketIfNeeded = async () => {
+        try {
+          // Check if the bucket exists first
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const prescriptionBucket = buckets?.find(b => b.name === 'prescriptions');
+          
+          if (!prescriptionBucket) {
+            await supabase.storage.createBucket('prescriptions', {
+              public: true,
+              fileSizeLimit: 5242880, // 5MB
+            });
+            console.log('Created prescriptions bucket');
+          }
+        } catch (error) {
+          console.error('Error checking/creating bucket:', error);
+        }
+      };
+      
+      createBucketIfNeeded();
+    }
+  }, [open]);
+
   // Upload file to Supabase Storage bucket 'prescriptions'
   const uploadFile = async (file: File) => {
     setUploading(true);
@@ -92,7 +116,7 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
         .from("prescriptions")
         .upload(fileName, file, { 
           cacheControl: "3600", 
-          upsert: false,
+          upsert: true,
           contentType: file.type 
         });
 
@@ -107,6 +131,7 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
         .from("prescriptions")
         .getPublicUrl(fileName);
 
+      console.log("File uploaded successfully:", publicUrlData.publicUrl);
       setUploading(false);
       setUploadedFileUrl(publicUrlData.publicUrl);
       return publicUrlData.publicUrl;
@@ -121,15 +146,15 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
     let file_url = uploadedFileUrl;
     
     try {
-      if (data.file && data.file.length > 0) {
-        const uploadedUrl = await uploadFile(data.file[0]);
-        if (!uploadedUrl) {
+      // Only attempt to upload if there's a file and it hasn't been uploaded yet
+      if (data.file && data.file.length > 0 && !uploadedFileUrl) {
+        file_url = await uploadFile(data.file[0]);
+        if (!file_url) {
           form.setError("file", { 
             message: "Failed to upload file. Please try again." 
           });
           return;
         }
-        file_url = uploadedUrl;
       }
 
       const prescription = {
@@ -139,6 +164,8 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
         has_file: !!file_url,
         file_url: file_url || null,
       };
+
+      console.log("Submitting prescription:", prescription);
 
       addPrescription.mutate(prescription, {
         onSuccess: () => {
@@ -239,6 +266,8 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                         const files = e.target.files;
                         if (files?.length) {
                           onChange(files);
+                          // Reset any previous upload
+                          setUploadedFileUrl(null);
                         }
                       }}
                       {...fieldProps}
@@ -251,6 +280,9 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                     />
                   </FormControl>
                   {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+                  {uploadedFileUrl && (
+                    <p className="text-sm text-green-600">File uploaded successfully!</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

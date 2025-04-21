@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -23,11 +24,11 @@ const Prescriptions = () => {
   const activeMedications = allMedications
     .filter(med => !medicationsLoading)
     .map((m) => ({
+      id: m.id,
       name: m.name,
       dosage: m.dosage,
       frequency: m.frequency,
       time: m.time,
-      lastTaken: m.last_taken || "Not taken yet",
     }));
 
   const filteredMedications = activeMedications.filter(
@@ -45,25 +46,10 @@ const Prescriptions = () => {
     );
   });
 
-  // Function to download or view prescription file with custom filename
+  // Function to download or view prescription file
   const handleDownloadFile = (fileUrl: string | null, prescriptionId: string) => {
     if (!fileUrl) return;
-    
-    // Extract the filename from the URL
-    const urlParts = fileUrl.split('/');
-    const originalFilename = urlParts[urlParts.length - 1];
-    
-    // Create a custom filename using the prescription ID
-    const fileExtension = originalFilename.split('.').pop();
-    const customFilename = `Prescription_${prescriptionId.slice(0, 8)}.${fileExtension}`;
-    
-    // Create a hidden anchor element to trigger the download with a custom filename
-    const a = document.createElement('a');
-    a.href = fileUrl;
-    a.download = customFilename; // Set the custom filename
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    window.open(fileUrl, "_blank");
   };
 
   return (
@@ -166,18 +152,6 @@ const Prescriptions = () => {
                                 ? new Date(prescription.expiry_date).toLocaleDateString()
                                 : ""}
                             </span>
-                          </div>
-                          <div className="pt-2">
-                            <p className="text-sm font-medium">Medications:</p>
-                            <ul className="mt-1 space-y-1">
-                              {(prescription.prescription_medications || []).map((pm, idx) =>
-                                pm.medication ? (
-                                  <li key={idx} className="text-sm">
-                                    {pm.medication.name} ({pm.medication.dosage}) - {pm.medication.frequency}
-                                  </li>
-                                ) : null
-                              )}
-                            </ul>
                           </div>
                         </div>
                       </CardContent>

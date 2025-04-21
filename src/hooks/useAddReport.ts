@@ -24,6 +24,22 @@ export function useAddReport() {
         throw new Error("Required fields are missing");
       }
 
+      // Check if the reports bucket exists, create if not
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const reportsBucket = buckets?.find(b => b.name === 'reports');
+        
+        if (!reportsBucket) {
+          console.log("Creating reports bucket");
+          await supabase.storage.createBucket('reports', {
+            public: true,
+            fileSizeLimit: 10485760, // 10MB
+          });
+        }
+      } catch (error) {
+        console.error("Error checking/creating bucket:", error);
+      }
+
       const { data, error } = await supabase
         .from("reports")
         .insert([report])

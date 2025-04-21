@@ -32,8 +32,10 @@ const Reports = () => {
   });
 
   // Function to download or view report file
-  const handleDownloadFile = (fileUrl: string | null) => {
+  const handleDownloadFile = (fileUrl: string | null, reportTitle: string) => {
     if (!fileUrl) return;
+    
+    // Open the file in a new tab
     window.open(fileUrl, "_blank");
   };
 
@@ -120,7 +122,7 @@ const Reports = () => {
                       variant="outline"
                       size="sm"
                       className="w-full gap-2"
-                      onClick={() => handleDownloadFile(report.file_url)}
+                      onClick={() => handleDownloadFile(report.file_url, report.title)}
                       disabled={!report.file_url}
                     >
                       <Download className="h-4 w-4" />

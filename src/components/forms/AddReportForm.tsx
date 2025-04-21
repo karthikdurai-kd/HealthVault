@@ -88,15 +88,40 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     }
   }, [open, form]);
 
+  // Create storage bucket if it doesn't exist
+  React.useEffect(() => {
+    if (open) {
+      const createBucketIfNeeded = async () => {
+        try {
+          // Check if the bucket exists first
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const reportsBucket = buckets?.find(b => b.name === 'reports');
+          
+          if (!reportsBucket) {
+            await supabase.storage.createBucket('reports', {
+              public: true,
+              fileSizeLimit: 10485760, // 10MB
+            });
+            console.log('Created reports bucket');
+          }
+        } catch (error) {
+          console.error('Error checking/creating bucket:', error);
+        }
+      };
+      
+      createBucketIfNeeded();
+    }
+  }, [open]);
+
   // Upload file to Supabase Storage bucket 'reports'
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const fileName = `report_${Date.now()}.${fileExt}`;
       const { data, error } = await supabase.storage
         .from("reports")
-        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+        .upload(fileName, file, { cacheControl: "3600", upsert: true, contentType: file.type });
 
       if (error) {
         console.error("Error uploading file:", error);
@@ -107,6 +132,7 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
       // Get public URL
       const { data: publicUrlData } = supabase.storage.from("reports").getPublicUrl(fileName);
       
+      console.log("File uploaded successfully:", publicUrlData.publicUrl);
       setUploading(false);
       setUploadedFileUrl(publicUrlData.publicUrl);
       return publicUrlData.publicUrl;
@@ -121,11 +147,14 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     let file_url = uploadedFileUrl;
     
     // Only upload if there's a file and it hasn't been uploaded yet
-    if (data.file && data.file instanceof File) {
+    if (data.file && data.file instanceof File && !uploadedFileUrl) {
       setUploading(true);
       const uploadedUrl = await uploadFile(data.file);
       if (!uploadedUrl) {
         setUploading(false);
+        form.setError("file", { 
+          message: "Failed to upload file. Please try again." 
+        });
         return;
       }
       file_url = uploadedUrl;
@@ -140,6 +169,8 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
       has_file: !!file_url,
       file_url: file_url || null,
     };
+
+    console.log("Submitting report:", report);
 
     addReport.mutate(report, {
       onSuccess: () => {
@@ -284,14 +315,18 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
                 <FormItem>
                   <FormLabel>Upload Report File</FormLabel>
                   <FormControl>
-                    <input
+                    <Input
                       type="file"
                       accept=".pdf,image/png,image/jpeg"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) onChange(file);
+                        if (file) {
+                          onChange(file);
+                          // Reset any previous upload
+                          setUploadedFileUrl(null);
+                        }
                       }}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                      className="file:mr-4 file:py-2 file:px-4
                       file:rounded-full file:border-0
                       file:text-sm file:font-semibold
                       file:bg-health-blue-100 file:text-health-blue-700
@@ -301,6 +336,9 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
                     />
                   </FormControl>
                   {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+                  {uploadedFileUrl && (
+                    <p className="text-sm text-green-600">File uploaded successfully!</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
