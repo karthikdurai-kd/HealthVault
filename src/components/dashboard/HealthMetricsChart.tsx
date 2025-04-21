@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,11 +23,22 @@ const typeMap: { [key: string]: string } = {
 };
 
 interface HealthMetricsChartProps {
-  forceRefresh?: number; // used to reload data if needed
+  forceRefresh?: number;
+  metricKey?: string; // for mini charts
+  mini?: boolean;
+  title?: string;
+  description?: string;
 }
 
-const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh }) => {
-  const [selectedMetric, setSelectedMetric] = useState("bloodPressure");
+const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({
+  forceRefresh,
+  metricKey,
+  mini = false,
+  title = "Health Trends",
+  description = "Track your health metrics over time",
+}) => {
+  const defaultMetric = metricKey || "bloodPressure";
+  const [selectedMetric, setSelectedMetric] = useState(defaultMetric);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +60,10 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
         if (!fetchError && metrics) {
           setData(metrics);
         } else {
-          console.error("Error fetching metrics:", fetchError);
           setData([]);
           setError("Failed to load health metrics");
         }
       } catch (e) {
-        console.error("Exception fetching metrics:", e);
         setError("An error occurred connecting to the database");
       }
 
@@ -71,9 +81,11 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
 
     chartRef.current.innerHTML = "";
 
-    const margin = { top: 16, right: 30, bottom: 40, left: 48 };
-    const width = chartRef.current.offsetWidth || 500;
-    const height = 300;
+    const margin = mini
+      ? { top: 10, right: 12, bottom: 22, left: 35 }
+      : { top: 16, right: 30, bottom: 40, left: 48 };
+    const width = chartRef.current.offsetWidth || (mini ? 260 : 500);
+    const height = mini ? 120 : 300;
 
     // Parse the data
     const xData = data.map((d) => new Date(d.date));
@@ -94,7 +106,10 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
     }
 
     // Scales
-    const x = d3.scaleTime().domain(d3.extent(xData) as [Date, Date]).range([margin.left, width - margin.right]);
+    const x = d3
+      .scaleTime()
+      .domain(d3.extent(xData) as [Date, Date])
+      .range([margin.left, width - margin.right]);
     const y = d3
       .scaleLinear()
       .domain([d3.min(yData) || 0, d3.max(yData) || 100])
@@ -121,19 +136,19 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
       .attr("transform", `translate(0,${height - margin.bottom})`)
       .call(
         d3.axisBottom(x)
-          .ticks(7)
-          .tickFormat(d3.timeFormat("%b %d") as any)
+          .ticks(5)
+          .tickFormat(d3.timeFormat(mini ? "%b" : "%b %d") as any)
       )
       .selectAll("text")
-      .style("font-size", 12);
+      .style("font-size", mini ? 10 : 12);
 
     // Y axis
     svg
       .append("g")
       .attr("transform", `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y).ticks(5))
+      .call(d3.axisLeft(y).ticks(mini ? 3 : 5))
       .selectAll("text")
-      .style("font-size", 12);
+      .style("font-size", mini ? 10 : 12);
 
     // Line
     svg
@@ -141,7 +156,7 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
       .datum(lineData)
       .attr("fill", "none")
       .attr("stroke", "#6366F1")
-      .attr("stroke-width", 2)
+      .attr("stroke-width", mini ? 1.25 : 2)
       .attr("d", line as any);
 
     // Dots
@@ -151,48 +166,47 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({ forceRefresh })
       .join("circle")
       .attr("cx", ([date]) => x(date))
       .attr("cy", ([, value]) => y(value))
-      .attr("r", 4)
+      .attr("r", mini ? 2 : 4)
       .attr("fill", "#6366F1");
-  }, [data, selectedMetric]);
+  }, [data, selectedMetric, mini]);
 
+  // Only show metric select on non-mini (main) chart
   return (
-    <Card className="col-span-3">
+    <Card className={mini ? "" : "col-span-3"}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle>Health Trends</CardTitle>
-          <CardDescription>
-            Track your health metrics over time
-          </CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </div>
-        <div>
-          <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select metric" />
-            </SelectTrigger>
-            <SelectContent>
-              {metricOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!mini && (
+          <div>
+            <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select metric" />
+              </SelectTrigger>
+              <SelectContent>
+                {metricOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardHeader>
-      <CardContent className="pt-2">
-        <div ref={chartRef} className="h-[300px] w-full" />
+      <CardContent className={mini ? "pt-1 pb-1" : "pt-2"}>
+        <div ref={chartRef} className={mini ? "h-[120px] w-full" : "h-[300px] w-full"} />
         {loading && (
-          <div className="text-center text-muted-foreground mt-6">
+          <div className="text-center text-muted-foreground mt-2">
             Loading...
           </div>
         )}
         {!loading && error && (
-          <div className="text-center text-red-500 mt-6">
-            {error}
-          </div>
+          <div className="text-center text-red-500 mt-2">{error}</div>
         )}
         {!loading && !error && data.length === 0 && (
-          <div className="text-center text-muted-foreground mt-6">
+          <div className="text-center text-muted-foreground mt-2">
             No health metrics available.
           </div>
         )}

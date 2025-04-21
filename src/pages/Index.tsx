@@ -5,12 +5,18 @@ import Sidebar from "@/components/layout/Sidebar";
 import HealthStatsGrid from "@/components/dashboard/HealthStatsGrid";
 import HealthMetricsChart from "@/components/dashboard/HealthMetricsChart";
 import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
-// Removed RecentMedications import
-// Removed Upload, Plus icons (buttons removed)
 import { useLatestMetrics } from "@/hooks/useLatestMetrics";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AddHealthMetricForm } from "@/components/forms/AddHealthMetricForm";
 import { AddReportForm } from "@/components/forms/AddReportForm";
+
+const allMiniMetrics = [
+  { key: "bloodPressure", label: "Blood Pressure", unit: "mmHg" },
+  { key: "bloodSugar", label: "Blood Sugar", unit: "mg/dL" },
+  { key: "weight", label: "Weight", unit: "kg" },
+  { key: "cholesterol", label: "Cholesterol", unit: "mg/dL" },
+  { key: "hemoglobin", label: "Hemoglobin", unit: "g/dL" },
+];
 
 const Index = () => {
   const { metrics, loading } = useLatestMetrics();
@@ -30,11 +36,9 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Removed Buttons for Upload Report and Add Health Data */}
-
           {/* Health Stats Grid */}
           <HealthStatsGrid latestMetrics={metrics} loading={loading}/>
-          
+
           {/* Charts and data section */}
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
             <HealthMetricsChart />
@@ -42,9 +46,23 @@ const Index = () => {
               <UpcomingAppointments />
             </div>
           </div>
-          
-          {/* Removed RecentMedications */}
-          
+
+          {/* All Mini Graphs for Health Metrics */}
+          <div>
+            <h2 className="mt-5 mb-3 text-lg font-semibold">All Metric Trends</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {allMiniMetrics.map(metric => (
+                <HealthMetricsChart
+                  key={metric.key}
+                  metricKey={metric.key}
+                  mini
+                  title={metric.label}
+                  description={`Recent trend (${metric.unit})`}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* Dialog for Health Metric Form */}
           <Dialog open={showHealthMetricForm} onOpenChange={setShowHealthMetricForm}>
             <DialogContent className="sm:max-w-[500px]">
@@ -67,4 +85,3 @@ const Index = () => {
 };
 
 export default Index;
-

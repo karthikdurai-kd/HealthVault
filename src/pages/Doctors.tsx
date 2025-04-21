@@ -4,22 +4,52 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Phone, MapPin, Calendar, User, Search } from "lucide-react";
+import { Plus, Phone, MapPin, Calendar, User, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import DoctorCard from "@/components/doctors/DoctorCard";
 import { useDoctors } from "@/hooks/useDoctors";
 import { AddDoctorForm } from "@/components/forms/AddDoctorForm";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Doctors = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data = [], isLoading } = useDoctors();
+  const { data = [], isLoading, refetch } = useDoctors();
   const [showDoctorForm, setShowDoctorForm] = useState(false);
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const filteredDoctors = data.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  async function handleDeleteDoctor(id: string) {
+    setDeletingId(id);
+    // Confirm deletion
+    if (!window.confirm("Are you sure you want to delete this doctor?")) {
+      setDeletingId(null);
+      return;
+    }
+
+    const { error } = await supabase.from("doctors").delete().eq("id", id);
+    if (!error) {
+      toast({
+        title: "Success",
+        description: "Doctor deleted.",
+      });
+      refetch?.();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete doctor.",
+        variant: "destructive",
+      });
+    }
+    setDeletingId(null);
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -54,12 +84,16 @@ const Doctors = () => {
           
           {/* Doctors List */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? (
-            <div>Loading...</div>
-          ) : filteredDoctors.map(doctor => (
-            <DoctorCard key={doctor.id} doctor={doctor} />
-          ))}
-        </div>
+            {isLoading ? (
+              <div>Loading...</div>
+            ) : filteredDoctors.map(doctor => (
+              <DoctorCard
+                key={doctor.id}
+                doctor={doctor}
+                onDelete={handleDeleteDoctor}
+              />
+            ))}
+          </div>
           
           {/* Empty State */}
           {filteredDoctors.length === 0 && !isLoading && (
@@ -104,6 +138,15 @@ const Doctors = () => {
                       <div className="text-sm text-muted-foreground">
                         {doctor.nextAppointment || ""}
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete doctor"
+                        onClick={() => handleDeleteDoctor(doctor.id)}
+                        disabled={deletingId === doctor.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   ))}
                   
