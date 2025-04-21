@@ -1,4 +1,3 @@
-
 import { Activity, Heart, Droplet } from "lucide-react";
 
 interface Props {
@@ -21,32 +20,28 @@ const metricInfo = [
     type: "Blood Pressure",
     icon: <Heart className="h-4 w-4 text-health-danger" />,
     unit: "mmHg",
-    status: (val: string) => <span className="text-health-green-600">Normal</span>,
   },
   {
     type: "Blood Sugar",
     icon: <Droplet className="h-4 w-4 text-health-warning" />,
     unit: "mg/dL",
-    status: (val: string) => <span className="text-health-warning">Slightly elevated</span>,
   },
   {
     type: "Cholesterol",
     icon: <Activity className="h-4 w-4 text-health-green-600" />,
     unit: "mg/dL",
-    status: (val: string) => <span className="text-health-green-600">Normal</span>,
   },
   {
     type: "Weight",
     icon: <Activity className="h-4 w-4 text-health-green-600" />,
     unit: "kg",
-    status: (val: string) => <span className="text-health-green-600">Normal</span>,
   },
 ];
 
 const HealthStatsGrid = ({ latestMetrics, loading }: Props) => {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {metricInfo.map(({ type, icon, unit, status }) => {
+      {metricInfo.map(({ type, icon, unit }) => {
         const metric = latestMetrics[type];
         return (
           <div
@@ -69,9 +64,7 @@ const HealthStatsGrid = ({ latestMetrics, loading }: Props) => {
                 {loading
                   ? ""
                   : metric
-                  ? <>
-                      {status(metric.value)} • Last checked {formatRecency(metric.date)}
-                    </>
+                  ? <>Last checked {formatRecency(metric.date)}</>
                   : "No data recorded"}
               </p>
             </div>

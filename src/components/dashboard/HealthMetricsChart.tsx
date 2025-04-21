@@ -1,25 +1,31 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
+// List of all metrics for the dropdown (used in Metric page)
 const metricOptions = [
   { value: "bloodPressure", label: "Blood Pressure" },
   { value: "bloodSugar", label: "Blood Sugar" },
-  { value: "cholesterol", label: "Cholesterol" },
   { value: "weight", label: "Weight" },
-  { value: "hemoglobin", label: "Hemoglobin" }
+  { value: "cholesterol", label: "Cholesterol" },
+  { value: "hemoglobin", label: "Hemoglobin" },
+  { value: "creatinine", label: "Creatinine" },
+  { value: "heartRate", label: "Heart Rate" },
+  { value: "oxygenSaturation", label: "Oxygen Saturation" },
 ];
 
-// Used to map frontend keys to backend 'type' field
+// Update mapping with all metrics
 const typeMap: { [key: string]: string } = {
   bloodPressure: "Blood Pressure",
   bloodSugar: "Blood Sugar",
   cholesterol: "Cholesterol",
   weight: "Weight",
   hemoglobin: "Hemoglobin",
+  creatinine: "Creatinine",
+  heartRate: "Heart Rate",
+  oxygenSaturation: "Oxygen Saturation",
 };
 
 interface HealthMetricsChartProps {

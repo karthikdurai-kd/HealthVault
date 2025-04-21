@@ -5,10 +5,12 @@ import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, FileText } from "lucide-react";
+import { filePdf } from "lucide-react/icons";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import MetricForm from "@/components/metrics/MetricForm";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import jsPDF from "jspdf";
 
 // These must match the backend
 const metricTypes = [
@@ -74,6 +76,29 @@ const Metrics = () => {
     if (diff <= 0) return "Today";
     if (diff === 1) return "Yesterday";
     return `${diff} days ago`;
+  }
+
+  // Export PDF for a single metric row
+  function handleExportPdf(metric: any) {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Health Metric Record", 14, 20);
+    doc.setFontSize(12);
+    let y = 35;
+    doc.text(`Metric: ${metric.type}`, 14, y);
+    y += 10;
+    doc.text(`Date: ${new Date(metric.date).toLocaleDateString()}`, 14, y);
+    y += 10;
+    doc.text(`Value: ${metric.value}`, 14, y);
+    y += 10;
+    if (metric.notes) {
+      doc.text("Notes:", 14, y);
+      y += 8;
+      doc.setFont("times", "italic");
+      doc.text(metric.notes, 14, y);
+      doc.setFont("times", "normal");
+    }
+    doc.save(`HealthMetric_${metric.type}_${new Date(metric.date).toLocaleDateString()}.pdf`);
   }
 
   return (
@@ -154,16 +179,17 @@ const Metrics = () => {
                     <TableHead>Metric</TableHead>
                     <TableHead>Value</TableHead>
                     <TableHead>Notes</TableHead>
+                    <TableHead>Export</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={4}>Loading...</TableCell>
+                      <TableCell colSpan={5}>Loading...</TableCell>
                     </TableRow>
                   ) : error ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-red-500">
+                      <TableCell colSpan={5} className="text-red-500">
                         Error loading data
                       </TableCell>
                     </TableRow>
@@ -174,6 +200,18 @@ const Metrics = () => {
                         <TableCell>{metric.type}</TableCell>
                         <TableCell>{metric.value}</TableCell>
                         <TableCell>{metric.notes || "-"}</TableCell>
+                        <TableCell>
+                          <Button 
+                            size="icon"
+                            variant="ghost"
+                            title="Export to PDF"
+                            onClick={() => handleExportPdf(metric)}
+                          >
+                            <span className="sr-only">Export to PDF</span>
+                            {/* @ts-ignore */}
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 10v7m4-7v7m4-7v7M4 21h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2Z"/><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 4v4H6V4"/></svg>
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
