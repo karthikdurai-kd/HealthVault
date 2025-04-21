@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -9,6 +8,9 @@ import MetricForm from "@/components/metrics/MetricForm";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ExportMetricsModal from "@/components/metrics/ExportMetricsModal";
+import { Edit, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useDeleteHealthMetric } from "@/hooks/useDeleteHealthMetric";
 
 // These must match the backend
 const metricTypes = [
@@ -22,13 +24,25 @@ const metricTypes = [
   "Oxygen Saturation"
 ];
 
+interface HealthMetric {
+  id: string;
+  type: string;
+  value: string;
+  date: string;
+  notes: string;
+}
+
 const Metrics = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [metrics, setMetrics] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<HealthMetric[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedMetric, setSelectedMetric] = useState<HealthMetric | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const deleteMetric = useDeleteHealthMetric();
 
   // Fetch metrics from Supabase on mount/refresh
   useEffect(() => {
@@ -48,7 +62,18 @@ const Metrics = () => {
           setError("Failed to load metrics from database");
           toast.error("Failed to fetch metrics from backend.");
         } else {
-          setMetrics(data || []);
+          setMetrics(data.map(metric => {
+            const displayDate = new Date(metric.date);
+            displayDate.setDate(displayDate.getDate() + 1);
+            
+            return {
+              id: metric.id,
+              type: metric.type,
+              value: metric.value,
+              date: displayDate.toISOString().split('T')[0],
+              notes: metric.notes
+            };
+          }));
         }
       } catch (e) {
         console.error("Exception fetching metrics:", e);
@@ -69,6 +94,27 @@ const Metrics = () => {
     if (diff === 1) return "Yesterday";
     return `${diff} days ago`;
   }
+
+  const handleEdit = (metric: HealthMetric) => {
+    setSelectedMetric(metric);
+    setIsEditOpen(true);
+  };
+
+  const handleDelete = (metric: HealthMetric) => {
+    setSelectedMetric(metric);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedMetric) {
+      deleteMetric.mutate(selectedMetric.id, {
+        onSuccess: () => {
+          setIsDeleteDialogOpen(false);
+          setRefreshKey(k => k + 1);
+        }
+      });
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -125,6 +171,7 @@ const Metrics = () => {
                     <TableHead>Metric</TableHead>
                     <TableHead>Value</TableHead>
                     <TableHead>Notes</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -145,6 +192,24 @@ const Metrics = () => {
                         <TableCell>{metric.type}</TableCell>
                         <TableCell>{metric.value}</TableCell>
                         <TableCell>{metric.notes || "-"}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleEdit(metric)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(metric)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -157,11 +222,17 @@ const Metrics = () => {
           </Card>
           
           {/* Metric Form Dialog */}
-          {isFormOpen && (
+          {(isFormOpen || isEditOpen) && (
             <MetricForm 
               metricTypes={metricTypes} 
-              onClose={() => setIsFormOpen(false)}
+              onClose={() => {
+                setIsFormOpen(false);
+                setIsEditOpen(false);
+                setSelectedMetric(null);
+              }}
               onMetricAdded={() => setRefreshKey(k => k + 1)}
+              initialData={isEditOpen ? selectedMetric : undefined}
+              isEditing={isEditOpen}
             />
           )}
 
@@ -172,6 +243,29 @@ const Metrics = () => {
               open={isExportOpen}
               onClose={() => setIsExportOpen(false)}
             />
+          )}
+
+          {/* Delete Confirmation Dialog */}
+          {isDeleteDialogOpen && (
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete this health metric record.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={confirmDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </main>
       </div>

@@ -58,7 +58,12 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
   });
 
   const onSubmit = (data: FormValues) => {
-    addMetric.mutate(data, {
+    addMetric.mutate({
+      type: data.type,
+      value: data.value,
+      date: data.date,
+      notes: data.notes
+    }, {
       onSuccess: () => {
         form.reset(defaultValues);
         if (onSuccess) onSuccess();
