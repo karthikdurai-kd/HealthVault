@@ -17,7 +17,8 @@ import {
   Dialog,
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -81,8 +82,9 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   };
 
   const onSubmit = (data: FormValues) => {
+    // We ensure all required fields are present from form data
     const prescription = {
-      ...data,
+      ...data, // doctor_id, date, and expiry_date are required by schema
       has_file: false, // For now, we're not handling file uploads
       medications: prescriptionMeds,
     };
@@ -101,7 +103,9 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Add Prescription</DialogTitle>
+          <DialogDescription>Enter details for the new prescription.</DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

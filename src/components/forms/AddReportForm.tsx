@@ -17,7 +17,8 @@ import {
   Dialog,
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription 
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -90,7 +91,9 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Medical Report</DialogTitle>
+          <DialogDescription>Enter details about the medical report.</DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

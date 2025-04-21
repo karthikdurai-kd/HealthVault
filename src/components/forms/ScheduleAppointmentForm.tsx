@@ -17,7 +17,8 @@ import {
   Dialog,
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -73,7 +74,9 @@ export function ScheduleAppointmentForm({ open, onOpenChange }: ScheduleAppointm
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Schedule Appointment</DialogTitle>
+          <DialogDescription>Book an appointment with your doctor.</DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

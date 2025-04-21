@@ -17,7 +17,8 @@ import {
   Dialog,
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { useAddDoctor } from "@/hooks/useAddDoctor";
 
@@ -50,6 +51,7 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
   });
 
   const onSubmit = (data: FormValues) => {
+    // All properties in data are required by the schema, so TypeScript knows they're defined
     addDoctor.mutate(data, {
       onSuccess: () => {
         form.reset();
@@ -63,7 +65,9 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Doctor</DialogTitle>
+          <DialogDescription>Enter details for the new doctor.</DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

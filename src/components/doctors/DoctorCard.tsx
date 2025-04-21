@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Phone, MapPin, Calendar, User, Clock } from "lucide-react";
 
 interface Doctor {
-  id: number;
+  id: string;  // Changed from number to string to match UUID from database
   name: string;
   specialty: string;
   hospital: string;
   address: string;
   phone: string;
-  lastVisit: string;
+  lastVisit: string | null;
   nextAppointment: string | null;
 }
 

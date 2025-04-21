@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Doctor {
-  id: string;
+  id: string;  // Changed from number to string to match UUID from database
   name: string;
   specialty: string;
   hospital: string;

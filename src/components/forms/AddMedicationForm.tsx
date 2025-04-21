@@ -17,7 +17,8 @@ import {
   Dialog,
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -58,6 +59,7 @@ export function AddMedicationForm({ open, onOpenChange }: AddMedicationFormProps
   });
 
   const onSubmit = (data: FormValues) => {
+    // All fields are required by the schema, so TypeScript knows they're defined
     addMedication.mutate(data, {
       onSuccess: () => {
         form.reset();
@@ -71,7 +73,9 @@ export function AddMedicationForm({ open, onOpenChange }: AddMedicationFormProps
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Medication</DialogTitle>
+          <DialogDescription>Enter details about the medication.</DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
