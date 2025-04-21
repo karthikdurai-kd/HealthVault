@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -7,15 +8,12 @@ import { Plus, Calendar, User, Clock, MapPin } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
+import { ScheduleAppointmentForm } from "@/components/forms/ScheduleAppointmentForm";
 
 const Appointments = () => {
   const { data: appointments = [], isLoading } = useAppointments();
   const { data: doctors = [] } = useDoctors();
-
-  // Populate doctor details for rendering
-  function doctorById(id) {
-    return doctors.find((d) => d.id === id);
-  }
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
 
   // Sample appointments data
   const upcomingAppointments = appointments.filter(apt => apt.status === "upcoming");
@@ -34,7 +32,7 @@ const Appointments = () => {
                 Schedule and manage your doctor visits
               </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setShowAppointmentForm(true)}>
               <Plus className="h-4 w-4" />
               Schedule Appointment
             </Button>
@@ -51,12 +49,11 @@ const Appointments = () => {
                 {isLoading ? (
                   <div>Loading...</div>
                 ) : upcomingAppointments.map((appointment) => {
-                    const doc = appointment.doctor || doctorById(appointment.doctor_id) || {};
                     return (
                       <Card key={appointment.id} className="border-l-4 border-l-health-blue-700">
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-base">{doc.name}</CardTitle>
-                          <CardDescription>{doc.specialty}</CardDescription>
+                          <CardTitle className="text-base">{appointment.doctor.name}</CardTitle>
+                          <CardDescription>{appointment.doctor.specialty}</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-2">
@@ -70,7 +67,7 @@ const Appointments = () => {
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span>{doc.hospital}</span>
+                              <span>{appointment.doctor.hospital}</span>
                             </div>
                           </div>
                           <div className="mt-4 flex gap-2">
@@ -89,7 +86,7 @@ const Appointments = () => {
                       <p className="mb-4 mt-1 text-sm text-muted-foreground">
                         Schedule a new appointment with your doctor.
                       </p>
-                      <Button>
+                      <Button onClick={() => setShowAppointmentForm(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Schedule Appointment
                       </Button>
@@ -104,14 +101,13 @@ const Appointments = () => {
                 {isLoading ? (
                   <div>Loading...</div>
                 ) : pastAppointments.map((appointment, index) => {
-                    const doc = appointment.doctor || doctorById(appointment.doctor_id) || {};
                     return (
                       <div key={appointment.id} className={`p-4 ${index !== pastAppointments.length - 1 ? 'border-b' : ''}`}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <h3 className="font-medium">{doc.name}</h3>
-                            <p className="text-sm text-muted-foreground">{doc.specialty}</p>
-                            <p className="text-sm text-muted-foreground mt-1">{doc.hospital}</p>
+                            <h3 className="font-medium">{appointment.doctor.name}</h3>
+                            <p className="text-sm text-muted-foreground">{appointment.doctor.specialty}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{appointment.doctor.hospital}</p>
                           </div>
                           <div className="mt-3 flex items-center gap-4 sm:mt-0">
                             <div className="text-sm">
@@ -142,6 +138,11 @@ const Appointments = () => {
               </div>
             </TabsContent>
           </Tabs>
+          
+          <ScheduleAppointmentForm 
+            open={showAppointmentForm} 
+            onOpenChange={setShowAppointmentForm} 
+          />
         </main>
       </div>
     </div>

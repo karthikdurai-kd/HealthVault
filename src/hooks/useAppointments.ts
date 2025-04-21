@@ -8,7 +8,7 @@ export function useAppointments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("*, doctor:doctors(*)");
+        .select("*, doctor:doctors(id, name, specialty, hospital)");
       if (error) throw error;
       return data || [];
     },

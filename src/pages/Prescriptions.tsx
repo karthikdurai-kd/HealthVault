@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -9,10 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MedicationsList from "@/components/prescriptions/MedicationsList";
 import { usePrescriptions } from "@/hooks/usePrescriptions";
 import { useMedications } from "@/hooks/useMedications";
+import { AddPrescriptionForm } from "@/components/forms/AddPrescriptionForm";
+import { AddMedicationForm } from "@/components/forms/AddMedicationForm";
 
 const Prescriptions = () => {
   const { data: prescriptions = [], isLoading } = usePrescriptions();
   const { data: allMedications = [] } = useMedications();
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+  const [showMedicationForm, setShowMedicationForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Gather active medications from all prescriptions.
   const activeMedications = allMedications
@@ -24,6 +30,20 @@ const Prescriptions = () => {
       time: m.time,
       lastTaken: m.last_taken,
     }));
+
+  // Filter medications based on search term
+  const filteredMedications = activeMedications.filter(med => 
+    med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    med.dosage.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Filter prescriptions based on search term
+  const filteredPrescriptions = prescriptions.filter(prescription => {
+    const doctorName = prescription.doctor?.name || '';
+    
+    return doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           prescription.id.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -38,10 +58,23 @@ const Prescriptions = () => {
                 Manage your prescriptions and medications
               </p>
             </div>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Prescription
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setShowMedicationForm(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Add Medication
+              </Button>
+              <Button 
+                className="gap-2"
+                onClick={() => setShowPrescriptionForm(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Add Prescription
+              </Button>
+            </div>
           </div>
           
           <Tabs defaultValue="medications">
@@ -57,10 +90,40 @@ const Prescriptions = () => {
                   type="search"
                   placeholder="Search medications..."
                   className="w-full bg-background pl-8 md:w-1/2 lg:w-1/3"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               
-              <MedicationsList medications={activeMedications} />
+              <MedicationsList medications={filteredMedications} />
+              
+              {filteredMedications.length === 0 && !searchTerm && (
+                <Card className="border-dashed">
+                  <CardContent className="pt-6 text-center">
+                    <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h3 className="mt-3 text-lg font-medium">No active medications</h3>
+                    <p className="mb-4 mt-1 text-sm text-muted-foreground">
+                      Add your current medications to track them.
+                    </p>
+                    <Button onClick={() => setShowMedicationForm(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Medication
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {filteredMedications.length === 0 && searchTerm && (
+                <Card className="border-dashed">
+                  <CardContent className="pt-6 text-center">
+                    <Search className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h3 className="mt-3 text-lg font-medium">No medications found</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Try adjusting your search criteria.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
             
             <TabsContent value="prescriptions" className="space-y-4">
@@ -70,13 +133,15 @@ const Prescriptions = () => {
                   type="search"
                   placeholder="Search prescriptions..."
                   className="w-full bg-background pl-8 md:w-1/2 lg:w-1/3"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
                   <div>Loading...</div>
-                ) : prescriptions.map((prescription) => (
+                ) : filteredPrescriptions.map((prescription) => (
                     <Card key={prescription.id}>
                       <CardHeader className="pb-2">
                         <CardTitle className="flex items-center justify-between text-base">
@@ -119,7 +184,7 @@ const Prescriptions = () => {
                   ))}
               </div>
               
-              {prescriptions.length === 0 && (
+              {filteredPrescriptions.length === 0 && !searchTerm && (
                 <Card className="border-dashed">
                   <CardContent className="pt-6 text-center">
                     <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -127,15 +192,37 @@ const Prescriptions = () => {
                     <p className="mb-4 mt-1 text-sm text-muted-foreground">
                       Add your prescriptions to keep track of your medications.
                     </p>
-                    <Button>
+                    <Button onClick={() => setShowPrescriptionForm(true)}>
                       <Plus className="mr-2 h-4 w-4" />
                       Add Prescription
                     </Button>
                   </CardContent>
                 </Card>
               )}
+              
+              {filteredPrescriptions.length === 0 && searchTerm && (
+                <Card className="border-dashed">
+                  <CardContent className="pt-6 text-center">
+                    <Search className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h3 className="mt-3 text-lg font-medium">No prescriptions found</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Try adjusting your search criteria.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
+          
+          {/* Forms */}
+          <AddPrescriptionForm 
+            open={showPrescriptionForm} 
+            onOpenChange={setShowPrescriptionForm} 
+          />
+          <AddMedicationForm 
+            open={showMedicationForm} 
+            onOpenChange={setShowMedicationForm} 
+          />
         </main>
       </div>
     </div>

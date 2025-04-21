@@ -1,16 +1,19 @@
+
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Phone, MapPin, Calendar, User, StarIcon, Search } from "lucide-react";
+import { Plus, Phone, MapPin, Calendar, User, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import DoctorCard from "@/components/doctors/DoctorCard";
 import { useDoctors } from "@/hooks/useDoctors";
+import { AddDoctorForm } from "@/components/forms/AddDoctorForm";
 
 const Doctors = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { data = [], isLoading } = useDoctors();
+  const [showDoctorForm, setShowDoctorForm] = useState(false);
 
   const filteredDoctors = data.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -31,7 +34,7 @@ const Doctors = () => {
                 Manage your healthcare providers and appointments
               </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setShowDoctorForm(true)}>
               <Plus className="h-4 w-4" />
               Add New Doctor
             </Button>
@@ -54,20 +57,12 @@ const Doctors = () => {
           {isLoading ? (
             <div>Loading...</div>
           ) : filteredDoctors.map(doctor => (
-            <DoctorCard key={doctor.id} doctor={{
-              ...doctor,
-              lastVisit: doctor.last_visit
-                ? new Date(doctor.last_visit).toLocaleDateString()
-                : "N/A",
-              nextAppointment: doctor.next_appointment
-                ? new Date(doctor.next_appointment).toLocaleDateString()
-                : null,
-            }} />
+            <DoctorCard key={doctor.id} doctor={doctor} />
           ))}
         </div>
           
           {/* Empty State */}
-          {filteredDoctors.length === 0 && (
+          {filteredDoctors.length === 0 && !isLoading && (
             <Card className="border-dashed">
               <CardContent className="pt-6 text-center">
                 <User className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -75,7 +70,7 @@ const Doctors = () => {
                 <p className="mb-4 mt-1 text-sm text-muted-foreground">
                   Try adjusting your search or add a new doctor.
                 </p>
-                <Button>
+                <Button onClick={() => setShowDoctorForm(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add New Doctor
                 </Button>
@@ -94,7 +89,7 @@ const Doctors = () => {
             <CardContent>
               <div className="space-y-4">
                 {filteredDoctors
-                  .filter(doctor => doctor.next_appointment)
+                  .filter(doctor => doctor.nextAppointment)
                   .map(doctor => (
                     <div key={doctor.id} className="flex items-center space-x-4 rounded-lg border p-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-health-blue-100">
@@ -107,14 +102,12 @@ const Doctors = () => {
                         </p>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {doctor.next_appointment
-                          ? new Date(doctor.next_appointment).toLocaleDateString()
-                          : ""}
+                        {doctor.nextAppointment || ""}
                       </div>
                     </div>
                   ))}
                   
-                {!isLoading && filteredDoctors.filter(d => d.next_appointment).length === 0 && (
+                {!isLoading && filteredDoctors.filter(d => d.nextAppointment).length === 0 && (
                   <div className="text-center py-4 text-muted-foreground">
                     No upcoming appointments scheduled
                   </div>
@@ -122,6 +115,12 @@ const Doctors = () => {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Add Doctor Form */}
+          <AddDoctorForm 
+            open={showDoctorForm} 
+            onOpenChange={setShowDoctorForm} 
+          />
         </main>
       </div>
     </div>

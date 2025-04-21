@@ -8,7 +8,7 @@ export function useReports() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reports")
-        .select("*, doctor:doctors(name,specialty)")
+        .select("*, doctor:doctors(id, name, specialty)")
         .order("date", { ascending: false });
       if (error) throw error;
       return data || [];

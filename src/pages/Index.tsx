@@ -1,4 +1,5 @@
 
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -8,9 +9,14 @@ import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 import RecentMedications from "@/components/dashboard/RecentMedications";
 import { BellRing, Upload, Plus } from "lucide-react";
 import { useLatestMetrics } from "@/hooks/useLatestMetrics";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AddHealthMetricForm } from "@/components/forms/AddHealthMetricForm";
+import { AddReportForm } from "@/components/forms/AddReportForm";
 
 const Index = () => {
   const { metrics, loading } = useLatestMetrics();
+  const [showHealthMetricForm, setShowHealthMetricForm] = useState(false);
+  const [showReportForm, setShowReportForm] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -26,11 +32,18 @@ const Index = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setShowReportForm(true)}
+              >
                 <Upload className="h-4 w-4" />
                 Upload Report
               </Button>
-              <Button className="gap-2">
+              <Button 
+                className="gap-2"
+                onClick={() => setShowHealthMetricForm(true)}
+              >
                 <Plus className="h-4 w-4" />
                 Add Health Data
               </Button>
@@ -63,6 +76,22 @@ const Index = () => {
           
           {/* Medications */}
           <RecentMedications />
+          
+          {/* Dialog for Health Metric Form */}
+          <Dialog open={showHealthMetricForm} onOpenChange={setShowHealthMetricForm}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add Health Metric</DialogTitle>
+              </DialogHeader>
+              <AddHealthMetricForm onSuccess={() => setShowHealthMetricForm(false)} />
+            </DialogContent>
+          </Dialog>
+          
+          {/* Report Form */}
+          <AddReportForm 
+            open={showReportForm} 
+            onOpenChange={setShowReportForm} 
+          />
         </main>
       </div>
     </div>

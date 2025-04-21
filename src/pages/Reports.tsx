@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -8,6 +9,7 @@ import { Plus, FileText, Calendar, Search, Download, User, Filter } from "lucide
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReports } from "@/hooks/useReports";
 import { useDoctors } from "@/hooks/useDoctors";
+import { AddReportForm } from "@/components/forms/AddReportForm";
 
 const reportTypes = ["All Types", "Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
 
@@ -16,12 +18,12 @@ const Reports = () => {
   const [selectedType, setSelectedType] = useState("All Types");
   const { data: reports = [], isLoading } = useReports();
   const { data: doctors = [] } = useDoctors();
+  const [showReportForm, setShowReportForm] = useState(false);
 
   const filteredReports = reports.filter(report => {
-    const doc = report.doctor || doctors.find((d) => d.id === report.doctor_id) || {};
     const matchesSearch =
       report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (doc.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.doctor?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.hospital.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesType = selectedType === "All Types" || report.type === selectedType;
@@ -42,7 +44,7 @@ const Reports = () => {
                 Store and access your medical reports and test results
               </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setShowReportForm(true)}>
               <Plus className="h-4 w-4" />
               Upload Report
             </Button>
@@ -83,7 +85,6 @@ const Reports = () => {
             {isLoading ? (
               <div>Loading...</div>
             ) : filteredReports.map((report) => {
-                const doc = report.doctor || doctors.find((d) => d.id === report.doctor_id) || {};
                 return (
                   <Card key={report.id}>
                     <CardHeader className="pb-2">
@@ -103,7 +104,7 @@ const Reports = () => {
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{doc.name}</span>
+                          <span>{report.doctor.name}</span>
                         </div>
                         <div className="text-sm text-muted-foreground ml-6">
                           {report.hospital}
@@ -132,13 +133,19 @@ const Reports = () => {
                     ? "Try adjusting your search or filters."
                     : "Upload medical reports to keep track of your test results."}
                 </p>
-                <Button>
+                <Button onClick={() => setShowReportForm(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Upload Report
                 </Button>
               </CardContent>
             </Card>
           )}
+          
+          {/* Add Report Form */}
+          <AddReportForm 
+            open={showReportForm} 
+            onOpenChange={setShowReportForm} 
+          />
         </main>
       </div>
     </div>
