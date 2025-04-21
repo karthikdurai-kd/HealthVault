@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -30,6 +29,7 @@ import {
 import { useAddReport } from "@/hooks/useAddReport";
 import { useDoctors } from "@/hooks/useDoctors";
 import { supabase } from "@/integrations/supabase/client";
+import { Download } from "lucide-react";
 
 const reportTypes = ["Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
 
@@ -309,4 +309,3 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     </Dialog>
   );
 }
-

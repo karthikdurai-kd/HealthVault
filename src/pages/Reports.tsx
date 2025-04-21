@@ -5,7 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Calendar, Search, Download, User } from "lucide-react";
+import { Plus, FileText, Calendar, Search, Download, User, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReports } from "@/hooks/useReports";
 import { useDoctors } from "@/hooks/useDoctors";

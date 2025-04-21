@@ -7,7 +7,7 @@ export interface AppointmentInput {
   doctor_id: string;
   date: string;
   time: string;
-  status: 'upcoming' | 'past' | 'cancelled';
+  status: string;
 }
 
 export function useAddAppointment() {

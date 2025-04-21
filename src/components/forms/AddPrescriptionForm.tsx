@@ -227,22 +227,22 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                 <FormItem>
                   <FormLabel>Upload Prescription File</FormLabel>
                   <FormControl>
-                    <input
+                    <Input
                       type="file"
                       accept=".pdf,image/png,image/jpeg"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) field.onChange([file]);
                       }}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                      className="file:mr-4 file:py-2 file:px-4
                       file:rounded-full file:border-0
                       file:text-sm file:font-semibold
                       file:bg-health-blue-100 file:text-health-blue-700
                       hover:file:bg-health-blue-200
                       "
                     />
-                    {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
                   </FormControl>
+                  {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
                   <FormMessage />
                 </FormItem>
               )}
