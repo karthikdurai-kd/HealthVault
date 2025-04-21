@@ -15,3 +15,14 @@ export function useReports() {
     },
   });
 }
+
+// Delete a report
+export async function deleteReport(id: string) {
+  const { error } = await supabase
+    .from('reports')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
+  return { success: true };
+}

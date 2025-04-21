@@ -5,20 +5,23 @@ import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Calendar, Search, Download, User, Filter } from "lucide-react";
+import { Plus, FileText, Calendar, Search, Download, User, Filter, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReports } from "@/hooks/useReports";
 import { useDoctors } from "@/hooks/useDoctors";
 import { AddReportForm } from "@/components/forms/AddReportForm";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const reportTypes = ["All Types", "Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
 
 const Reports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
-  const { data: reports = [], isLoading } = useReports();
+  const { data: reports = [], isLoading, refetch } = useReports();
   const { data: doctors = [] } = useDoctors();
   const [showReportForm, setShowReportForm] = useState(false);
+  const { toast } = useToast();
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
@@ -33,10 +36,62 @@ const Reports = () => {
 
   // Function to download or view report file
   const handleDownloadFile = (fileUrl: string | null, reportTitle: string) => {
-    if (!fileUrl) return;
+    if (!fileUrl) {
+      toast({
+        title: "Error",
+        description: "No file available for this report",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Open the file in a new tab
     window.open(fileUrl, "_blank");
+  };
+
+  // Function to delete a report
+  const handleDeleteReport = async (reportId: string, fileUrl: string | null) => {
+    try {
+      // If there's a file, delete it first
+      if (fileUrl) {
+        // Extract file path from URL
+        const filePathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/reports\/(.*)/);
+        if (filePathMatch && filePathMatch[1]) {
+          const filePath = decodeURIComponent(filePathMatch[1]);
+          const { error: fileError } = await supabase.storage
+            .from('reports')
+            .remove([filePath]);
+          
+          if (fileError) {
+            console.error("Error deleting file:", fileError);
+            // Continue with report deletion even if file deletion fails
+          }
+        }
+      }
+
+      // Delete the report record
+      const { error } = await supabase
+        .from('reports')
+        .delete()
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Report deleted successfully",
+      });
+      
+      // Refresh the reports list
+      refetch();
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete report",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -117,16 +172,24 @@ const Reports = () => {
                       <div className="text-sm text-muted-foreground ml-6">{report.hospital}</div>
                     </div>
                   </CardContent>
-                  <CardFooter className="border-t p-3">
+                  <CardFooter className="border-t p-3 flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full gap-2"
+                      className="flex-1 gap-2"
                       onClick={() => handleDownloadFile(report.file_url, report.title)}
                       disabled={!report.file_url}
                     >
                       <Download className="h-4 w-4" />
                       {report.file_url ? "View Report" : "No File Available"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => handleDeleteReport(report.id, report.file_url)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </CardFooter>
                 </Card>

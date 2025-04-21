@@ -30,6 +30,9 @@ import {
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadFileToBucket, ensurePublicBucket } from "@/utils/supabaseUtils";
+import { Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   doctor_id: z.string().min(1, "Doctor is required"),
@@ -59,6 +62,7 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   const { data: doctors = [], isLoading: isLoadingDoctors } = useDoctors();
   const [uploading, setUploading] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const addPrescription = useAddPrescription();
 
@@ -83,61 +87,36 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   // Create storage bucket if it doesn't exist 
   useEffect(() => {
     if (open) {
-      const createBucketIfNeeded = async () => {
-        try {
-          // Check if the bucket exists first
-          const { data: buckets } = await supabase.storage.listBuckets();
-          const prescriptionBucket = buckets?.find(b => b.name === 'prescriptions');
-          
-          if (!prescriptionBucket) {
-            await supabase.storage.createBucket('prescriptions', {
-              public: true,
-              fileSizeLimit: 5242880, // 5MB
-            });
-            console.log('Created prescriptions bucket');
-          }
-        } catch (error) {
-          console.error('Error checking/creating bucket:', error);
-        }
-      };
-      
-      createBucketIfNeeded();
+      ensurePublicBucket('prescriptions');
     }
   }, [open]);
 
   // Upload file to Supabase Storage bucket 'prescriptions'
   const uploadFile = async (file: File) => {
     setUploading(true);
-    const fileExt = file.name.split(".").pop();
-    const fileName = `prescription_${Date.now()}.${fileExt}`;
-    
     try {
-      const { data, error } = await supabase.storage
-        .from("prescriptions")
-        .upload(fileName, file, { 
-          cacheControl: "3600", 
-          upsert: true,
-          contentType: file.type 
+      const url = await uploadFileToBucket(file, 'prescriptions', 'prescription_');
+      setUploading(false);
+      
+      if (url) {
+        setUploadedFileUrl(url);
+        return url;
+      } else {
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload file. Please try again.",
+          variant: "destructive",
         });
-
-      if (error) {
-        console.error("Error uploading file:", error);
-        setUploading(false);
         return null;
       }
-      
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from("prescriptions")
-        .getPublicUrl(fileName);
-
-      console.log("File uploaded successfully:", publicUrlData.publicUrl);
-      setUploading(false);
-      setUploadedFileUrl(publicUrlData.publicUrl);
-      return publicUrlData.publicUrl;
     } catch (error) {
       console.error("Exception during upload:", error);
       setUploading(false);
+      toast({
+        title: "Upload Failed",
+        description: "An unexpected error occurred during upload.",
+        variant: "destructive",
+      });
       return null;
     }
   };
@@ -176,7 +155,17 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
       });
     } catch (error) {
       console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save prescription. Please try again.",
+        variant: "destructive",
+      });
     }
+  };
+
+  // View uploaded file
+  const handleViewFile = () => {
+    if (uploadedFileUrl) window.open(uploadedFileUrl, "_blank");
   };
 
   return (
@@ -281,7 +270,18 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                   </FormControl>
                   {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
                   {uploadedFileUrl && (
-                    <p className="text-sm text-green-600">File uploaded successfully!</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-green-600">File uploaded successfully!</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleViewFile}
+                      >
+                        <Download className="mr-1 h-4 w-4" />
+                        View
+                      </Button>
+                    </div>
                   )}
                   <FormMessage />
                 </FormItem>

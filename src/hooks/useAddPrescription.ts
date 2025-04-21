@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensurePublicBucket } from "@/utils/supabaseUtils";
 
 export interface PrescriptionInput {
   doctor_id: string;
@@ -21,6 +22,9 @@ export function useAddPrescription() {
       if (!prescription.doctor_id || !prescription.date || !prescription.expiry_date) {
         throw new Error("Required fields are missing");
       }
+
+      // Ensure the prescriptions bucket exists
+      await ensurePublicBucket('prescriptions');
 
       // Insert the prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase

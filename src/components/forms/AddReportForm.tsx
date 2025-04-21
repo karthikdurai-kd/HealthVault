@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,7 @@ import { useAddReport } from "@/hooks/useAddReport";
 import { useDoctors } from "@/hooks/useDoctors";
 import { supabase } from "@/integrations/supabase/client";
 import { Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const reportTypes = ["Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
 
@@ -46,8 +47,9 @@ const formSchema = z.object({
     .refine(
       (file) =>
         !file ||
-        (file instanceof File &&
-          ["application/pdf", "image/png", "image/jpeg"].includes(file.type)),
+        !file.length ||
+        (file[0] instanceof File &&
+          ["application/pdf", "image/png", "image/jpeg"].includes(file[0].type)),
       "Only PDF, PNG, or JPEG files are accepted"
     ),
 });
@@ -62,8 +64,9 @@ interface AddReportFormProps {
 export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
   const { data: doctors = [], isLoading: isLoadingDoctors } = useDoctors();
   const addReport = useAddReport();
-  const [uploading, setUploading] = React.useState(false);
-  const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,9 +81,8 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
   });
 
   // Reset form when dialog opens/closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
-      // Small delay to ensure the form is reset after the dialog animation completes
       setTimeout(() => {
         form.reset();
         setUploadedFileUrl(null);
@@ -89,7 +91,7 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
   }, [open, form]);
 
   // Create storage bucket if it doesn't exist
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       const createBucketIfNeeded = async () => {
         try {
@@ -102,16 +104,31 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
               public: true,
               fileSizeLimit: 10485760, // 10MB
             });
+            
+            // Create public bucket policy
+            const { error: policyError } = await supabase.storage.from('reports').getPublicUrl('test');
+            if (policyError) {
+              console.error('Error with bucket policy, attempting to set public policy');
+              
+              // Try to set a public policy - this is a fallback
+              await supabase.rpc('create_public_bucket_policy', { bucket_name: 'reports' });
+            }
+            
             console.log('Created reports bucket');
           }
         } catch (error) {
           console.error('Error checking/creating bucket:', error);
+          toast({
+            title: "Error",
+            description: "Failed to initialize storage. Please try again.",
+            variant: "destructive",
+          });
         }
       };
       
       createBucketIfNeeded();
     }
-  }, [open]);
+  }, [open, toast]);
 
   // Upload file to Supabase Storage bucket 'reports'
   const uploadFile = async (file: File) => {
@@ -119,12 +136,35 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `report_${Date.now()}.${fileExt}`;
+      
+      // First, check if bucket exists and is accessible
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const reportsBucket = buckets?.find(b => b.name === 'reports');
+      
+      if (!reportsBucket) {
+        toast({
+          title: "Error",
+          description: "Storage bucket not found. Please contact support.",
+          variant: "destructive",
+        });
+        setUploading(false);
+        return null;
+      }
+      
       const { data, error } = await supabase.storage
         .from("reports")
-        .upload(fileName, file, { cacheControl: "3600", upsert: true, contentType: file.type });
+        .upload(fileName, file, { 
+          cacheControl: "3600", 
+          upsert: true
+        });
 
       if (error) {
         console.error("Error uploading file:", error);
+        toast({
+          title: "Upload Failed",
+          description: `Error: ${error.message}`,
+          variant: "destructive",
+        });
         setUploading(false);
         return null;
       }
@@ -138,6 +178,11 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
       return publicUrlData.publicUrl;
     } catch (error) {
       console.error("Error in file upload:", error);
+      toast({
+        title: "Upload Failed",
+        description: "An unexpected error occurred during upload.",
+        variant: "destructive",
+      });
       setUploading(false);
       return null;
     }
@@ -147,17 +192,26 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     let file_url = uploadedFileUrl;
     
     // Only upload if there's a file and it hasn't been uploaded yet
-    if (data.file && data.file instanceof File && !uploadedFileUrl) {
+    if (data.file && data.file[0] && !uploadedFileUrl) {
       setUploading(true);
-      const uploadedUrl = await uploadFile(data.file);
-      if (!uploadedUrl) {
+      try {
+        const uploadedUrl = await uploadFile(data.file[0]);
+        if (!uploadedUrl) {
+          setUploading(false);
+          form.setError("file", { 
+            message: "Failed to upload file. Please try again." 
+          });
+          return;
+        }
+        file_url = uploadedUrl;
+      } catch (error) {
+        console.error("Error during file upload:", error);
         setUploading(false);
         form.setError("file", { 
           message: "Failed to upload file. Please try again." 
         });
         return;
       }
-      file_url = uploadedUrl;
     }
 
     const report = {
@@ -177,16 +231,28 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
         form.reset();
         setUploadedFileUrl(null);
         onOpenChange(false);
+        toast({
+          title: "Success",
+          description: "Report added successfully",
+        });
       },
+      onError: (error) => {
+        console.error("Error adding report:", error);
+        toast({
+          title: "Error",
+          description: `Failed to add report: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     });
   };
 
   // When doctor is selected, auto-fill hospital
   const selectedDoctorId = form.watch("doctor_id");
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedDoctorId) {
       const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId);
-      if (selectedDoctor) {
+      if (selectedDoctor && selectedDoctor.hospital) {
         form.setValue("hospital", selectedDoctor.hospital);
       }
     }
@@ -319,9 +385,9 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
                       type="file"
                       accept=".pdf,image/png,image/jpeg"
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          onChange(file);
+                        const files = e.target.files;
+                        if (files?.length) {
+                          onChange(files);
                           // Reset any previous upload
                           setUploadedFileUrl(null);
                         }

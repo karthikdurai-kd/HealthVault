@@ -31,10 +31,23 @@ export function useAddReport() {
         
         if (!reportsBucket) {
           console.log("Creating reports bucket");
-          await supabase.storage.createBucket('reports', {
+          const { error } = await supabase.storage.createBucket('reports', {
             public: true,
             fileSizeLimit: 10485760, // 10MB
           });
+          
+          if (error) {
+            console.error("Error creating bucket:", error);
+            throw new Error(`Failed to create storage bucket: ${error.message}`);
+          }
+          
+          // Try to set a public policy
+          try {
+            await supabase.rpc('create_public_bucket_policy', { bucket_name: 'reports' });
+          } catch (policyError) {
+            console.error("Error setting public policy:", policyError);
+            // Continue anyway, as this may not be fatal
+          }
         }
       } catch (error) {
         console.error("Error checking/creating bucket:", error);
@@ -46,23 +59,18 @@ export function useAddReport() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting report:", error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
-      toast({
-        title: "Success",
-        description: "Medical report added successfully",
-      });
     },
     onError: (error) => {
       console.error("Error adding report:", error);
-      toast({
-        title: "Error",
-        description: `Failed to add report: ${error.message}`,
-        variant: "destructive",
-      });
     },
   });
 }
