@@ -29,8 +29,7 @@ import {
 } from "@/components/ui/select";
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
-import { useMedications } from "@/hooks/useMedications";
-import { X, Plus } from "lucide-react";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
@@ -52,11 +51,6 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface PrescriptionMedication {
-  medication_id: string;
-  duration: string;
-}
-
 interface AddPrescriptionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -64,10 +58,6 @@ interface AddPrescriptionFormProps {
 
 export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormProps) {
   const { data: doctors = [], isLoading: isLoadingDoctors } = useDoctors();
-  const { data: medications = [], isLoading: isLoadingMedications } = useMedications();
-  const [prescriptionMeds, setPrescriptionMeds] = useState<PrescriptionMedication[]>([]);
-  const [currentMed, setCurrentMed] = useState<string>("");
-  const [currentDuration, setCurrentDuration] = useState<string>("1 month");
   const [uploading, setUploading] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
 
@@ -87,31 +77,15 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   useEffect(() => {
     if (!open) {
       form.reset();
-      setPrescriptionMeds([]);
       setUploadedFileUrl(null);
-      setCurrentMed("");
     }
   }, [open, form]);
-
-  const addMedicationToPrescription = () => {
-    if (currentMed) {
-      setPrescriptionMeds([
-        ...prescriptionMeds,
-        { medication_id: currentMed, duration: currentDuration },
-      ]);
-      setCurrentMed("");
-    }
-  };
-
-  const removeMedicationFromPrescription = (index: number) => {
-    setPrescriptionMeds(prescriptionMeds.filter((_, i) => i !== index));
-  };
 
   // Upload file to Supabase Storage bucket 'prescriptions'
   const uploadFile = async (file: File) => {
     setUploading(true);
     const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
+    const fileName = `prescription_${Date.now()}.${fileExt}`;
     
     try {
       const { data, error } = await supabase.storage
@@ -164,13 +138,11 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
         expiry_date: data.expiry_date,
         has_file: !!file_url,
         file_url: file_url || null,
-        medications: prescriptionMeds,
       };
 
       addPrescription.mutate(prescription, {
         onSuccess: () => {
           form.reset();
-          setPrescriptionMeds([]);
           setUploadedFileUrl(null);
           onOpenChange(false);
         },
@@ -283,74 +255,6 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                 </FormItem>
               )}
             />
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Medications</h3>
-
-              <div className="flex gap-2">
-                <Select value={currentMed} onValueChange={setCurrentMed}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select medication" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingMedications ? (
-                      <SelectItem value="loading" disabled>
-                        Loading medications...
-                      </SelectItem>
-                    ) : (
-                      medications.map((med) => (
-                        <SelectItem key={med.id} value={med.id}>
-                          {med.name} ({med.dosage})
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-
-                <Select value={currentDuration} onValueChange={setCurrentDuration}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1 week">1 week</SelectItem>
-                    <SelectItem value="2 weeks">2 weeks</SelectItem>
-                    <SelectItem value="1 month">1 month</SelectItem>
-                    <SelectItem value="2 months">2 months</SelectItem>
-                    <SelectItem value="3 months">3 months</SelectItem>
-                    <SelectItem value="6 months">6 months</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button type="button" size="icon" onClick={addMedicationToPrescription} disabled={!currentMed}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {prescriptionMeds.length > 0 && (
-                <div className="rounded-md border p-4 mt-2">
-                  <ul className="space-y-2">
-                    {prescriptionMeds.map((med, index) => {
-                      const medication = medications.find((m) => m.id === med.medication_id);
-                      return (
-                        <li key={index} className="flex items-center justify-between">
-                          <span>
-                            {medication?.name} ({medication?.dosage}) - {med.duration}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeMedicationFromPrescription(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

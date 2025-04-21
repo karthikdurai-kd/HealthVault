@@ -9,7 +9,12 @@ export function useMedications() {
       const { data, error } = await supabase
         .from("medications")
         .select("*");
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching medications:", error);
+        throw error;
+      }
+      
       return data || [];
     }
   });

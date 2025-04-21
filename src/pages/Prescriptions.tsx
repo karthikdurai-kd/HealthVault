@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -22,17 +21,13 @@ const Prescriptions = () => {
 
   // Active medications
   const activeMedications = allMedications
-    .filter(
-      (m) =>
-        m.last_taken &&
-        (m.last_taken.toLowerCase() === "today" || m.last_taken.toLowerCase() === "yesterday")
-    )
+    .filter(med => !medicationsLoading)
     .map((m) => ({
       name: m.name,
       dosage: m.dosage,
       frequency: m.frequency,
       time: m.time,
-      lastTaken: m.last_taken,
+      lastTaken: m.last_taken || "Not taken yet",
     }));
 
   const filteredMedications = activeMedications.filter(
@@ -50,11 +45,25 @@ const Prescriptions = () => {
     );
   });
 
-  // Function to download or view prescription file
-  const handleDownloadFile = (fileUrl: string | null) => {
+  // Function to download or view prescription file with custom filename
+  const handleDownloadFile = (fileUrl: string | null, prescriptionId: string) => {
     if (!fileUrl) return;
-    // Open the file url in a new tab (view or download depending on browser settings)
-    window.open(fileUrl, "_blank");
+    
+    // Extract the filename from the URL
+    const urlParts = fileUrl.split('/');
+    const originalFilename = urlParts[urlParts.length - 1];
+    
+    // Create a custom filename using the prescription ID
+    const fileExtension = originalFilename.split('.').pop();
+    const customFilename = `Prescription_${prescriptionId.slice(0, 8)}.${fileExtension}`;
+    
+    // Create a hidden anchor element to trigger the download with a custom filename
+    const a = document.createElement('a');
+    a.href = fileUrl;
+    a.download = customFilename; // Set the custom filename
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
@@ -103,18 +112,6 @@ const Prescriptions = () => {
               ) : (
                 <MedicationsList medications={filteredMedications} />
               )}
-
-              {!medicationsLoading && filteredMedications.length === 0 && (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-center text-muted-foreground">
-                    {searchTerm ? (
-                      "No medications matched your search"
-                    ) : (
-                      "No active medications"
-                    )}
-                  </CardContent>
-                </Card>
-              )}
             </TabsContent>
 
             <TabsContent value="prescriptions" className="space-y-4">
@@ -142,7 +139,7 @@ const Prescriptions = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => handleDownloadFile(prescription.file_url)}
+                              onClick={() => handleDownloadFile(prescription.file_url, prescription.id)}
                               aria-label="View prescription file"
                               title="View prescription file"
                             >

@@ -8,6 +8,7 @@ export interface MedicationInput {
   dosage: string;
   frequency: string;
   time: string;
+  last_taken?: string;
 }
 
 export function useAddMedication() {
@@ -20,13 +21,23 @@ export function useAddMedication() {
         throw new Error("All fields are required");
       }
 
+      // Set default last_taken value if not provided
+      const medicationWithLastTaken = {
+        ...medication,
+        last_taken: medication.last_taken || "Not taken yet"
+      };
+
       const { data, error } = await supabase
         .from("medications")
-        .insert([medication])
+        .insert([medicationWithLastTaken])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding medication:", error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: () => {

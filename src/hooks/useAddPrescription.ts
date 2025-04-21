@@ -9,10 +9,6 @@ export interface PrescriptionInput {
   expiry_date: string;
   has_file: boolean;
   file_url?: string | null;
-  medications?: {
-    medication_id: string;
-    duration: string;
-  }[];
 }
 
 export function useAddPrescription() {
@@ -26,7 +22,7 @@ export function useAddPrescription() {
         throw new Error("Required fields are missing");
       }
 
-      // First insert the prescription
+      // Insert the prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
         .insert([{
@@ -39,21 +35,9 @@ export function useAddPrescription() {
         .select()
         .single();
 
-      if (prescriptionError) throw prescriptionError;
-
-      // If medications are provided, insert prescription_medications
-      if (prescription.medications && prescription.medications.length > 0) {
-        const prescriptionMedicationsData = prescription.medications.map(med => ({
-          prescription_id: prescriptionData.id,
-          medication_id: med.medication_id,
-          duration: med.duration
-        }));
-
-        const { error: medicationsError } = await supabase
-          .from("prescription_medications")
-          .insert(prescriptionMedicationsData);
-
-        if (medicationsError) throw medicationsError;
+      if (prescriptionError) {
+        console.error("Error adding prescription:", prescriptionError);
+        throw prescriptionError;
       }
 
       return prescriptionData;
