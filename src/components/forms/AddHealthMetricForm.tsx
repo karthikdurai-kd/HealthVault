@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -45,26 +44,29 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
   const addMetric = useAddHealthMetric();
+  const defaultValues = {
+    type: "",
+    value: "",
+    date: new Date().toISOString().split("T")[0],
+    notes: "",
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      type: "",
-      value: "",
-      date: new Date().toISOString().split("T")[0],
-      notes: "",
-    },
+    defaultValues,
   });
 
   const onSubmit = (data: FormValues) => {
     addMetric.mutate(data, {
       onSuccess: () => {
-        form.reset();
+        form.reset(defaultValues); // <-- Use full defaultValues matching FormValues
         if (onSuccess) onSuccess();
       },
     });
   };
 
   return (
+    
     <Card>
       <CardHeader>
         <CardTitle>Add Health Metric</CardTitle>
@@ -72,6 +74,7 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
             <FormField
               control={form.control}
               name="type"
@@ -99,7 +102,6 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="value"
@@ -113,7 +115,6 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="date"
@@ -127,7 +128,6 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="notes"
@@ -144,7 +144,6 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
                 </FormItem>
               )}
             />
-
             <Button
               type="submit"
               className="w-full"
@@ -158,3 +157,4 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
     </Card>
   );
 }
+

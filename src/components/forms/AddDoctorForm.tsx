@@ -38,27 +38,30 @@ interface AddDoctorFormProps {
 
 export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
   const addDoctor = useAddDoctor();
+  const defaultValues = {
+    name: "",
+    specialty: "",
+    hospital: "",
+    address: "",
+    phone: "",
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      specialty: "",
-      hospital: "",
-      address: "",
-      phone: "",
-    },
+    defaultValues,
   });
 
   const onSubmit = (data: FormValues) => {
     addDoctor.mutate(data, {
       onSuccess: () => {
-        form.reset();
+        form.reset(defaultValues); // <-- Use complete values for reset
         onOpenChange(false);
       },
     });
   };
 
   return (
+    
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
@@ -68,6 +71,7 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
             <FormField
               control={form.control}
               name="name"
@@ -81,7 +85,6 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="specialty"
@@ -95,7 +98,6 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="hospital"
@@ -109,7 +111,6 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="address"
@@ -123,7 +124,6 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="phone"
@@ -137,7 +137,6 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
                 </FormItem>
               )}
             />
-
             <div className="flex justify-end gap-2 pt-4">
               <Button 
                 type="button" 
