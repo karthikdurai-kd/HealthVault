@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -44,7 +45,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
   const addMetric = useAddHealthMetric();
-  const defaultValues = {
+  const defaultValues: FormValues = {
     type: "",
     value: "",
     date: new Date().toISOString().split("T")[0],
@@ -59,7 +60,7 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
   const onSubmit = (data: FormValues) => {
     addMetric.mutate(data, {
       onSuccess: () => {
-        form.reset(defaultValues); // <-- Use full defaultValues matching FormValues
+        form.reset(defaultValues);
         if (onSuccess) onSuccess();
       },
     });
@@ -157,4 +158,3 @@ export function AddHealthMetricForm({ onSuccess }: { onSuccess?: () => void }) {
     </Card>
   );
 }
-
