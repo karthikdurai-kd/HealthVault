@@ -31,7 +31,7 @@ const Sidebar = () => {
       <div className="flex h-14 items-center border-b px-4">
         <Link to="/" className="flex items-center gap-2 font-semibold">
           <span className="h-6 w-6 rounded-full bg-health-blue-700"></span>
-          <span className="text-lg font-bold text-health-blue-700">HealthScope</span>
+          <span className="text-lg font-bold text-health-blue-700">Medicare AI</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">
