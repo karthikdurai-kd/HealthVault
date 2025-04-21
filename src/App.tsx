@@ -11,6 +11,9 @@ import Metrics from "./pages/Metrics";
 import Prescriptions from "./pages/Prescriptions";
 import Reports from "./pages/Reports";
 import Appointments from "./pages/Appointments";
+import Settings from "./pages/Settings";
+import Auth from "./pages/Auth";
+import { ProtectedRoute } from "./components/routes/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -21,12 +24,63 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/doctors" element={<Doctors />} />
-          <Route path="/metrics" element={<Metrics />} />
-          <Route path="/prescriptions" element={<Prescriptions />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/appointments" element={<Appointments />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctors"
+            element={
+              <ProtectedRoute>
+                <Doctors />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/metrics"
+            element={
+              <ProtectedRoute>
+                <Metrics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/prescriptions"
+            element={
+              <ProtectedRoute>
+                <Prescriptions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <Reports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/appointments"
+            element={
+              <ProtectedRoute>
+                <Appointments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

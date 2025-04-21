@@ -18,6 +18,7 @@ export type Database = {
           status: string
           time: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -27,6 +28,7 @@ export type Database = {
           status: string
           time: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -36,6 +38,7 @@ export type Database = {
           status?: string
           time?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -59,6 +62,7 @@ export type Database = {
           phone: string
           specialty: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           address: string
@@ -71,6 +75,7 @@ export type Database = {
           phone: string
           specialty: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           address?: string
@@ -83,6 +88,7 @@ export type Database = {
           phone?: string
           specialty?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -94,6 +100,7 @@ export type Database = {
           notes: string | null
           type: string
           updated_at: string
+          user_id: string | null
           value: string
         }
         Insert: {
@@ -103,6 +110,7 @@ export type Database = {
           notes?: string | null
           type: string
           updated_at?: string
+          user_id?: string | null
           value: string
         }
         Update: {
@@ -112,6 +120,7 @@ export type Database = {
           notes?: string | null
           type?: string
           updated_at?: string
+          user_id?: string | null
           value?: string
         }
         Relationships: []
@@ -126,6 +135,7 @@ export type Database = {
           name: string
           time: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -136,6 +146,7 @@ export type Database = {
           name: string
           time: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -146,6 +157,7 @@ export type Database = {
           name?: string
           time?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -200,6 +212,7 @@ export type Database = {
           has_file: boolean
           id: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -209,6 +222,7 @@ export type Database = {
           has_file?: boolean
           id?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -218,6 +232,7 @@ export type Database = {
           has_file?: boolean
           id?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -228,6 +243,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       reports: {
         Row: {
@@ -240,6 +279,7 @@ export type Database = {
           title: string
           type: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -251,6 +291,7 @@ export type Database = {
           title: string
           type: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -262,6 +303,7 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
