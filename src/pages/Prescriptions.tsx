@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -8,52 +7,24 @@ import { Plus, FileText, Calendar, Search, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MedicationsList from "@/components/prescriptions/MedicationsList";
-
-// Sample prescription data
-const prescriptions = [
-  {
-    id: 1,
-    doctor: "Dr. Sarah Johnson",
-    date: "2025-03-15",
-    expiryDate: "2025-09-15",
-    hasFile: true,
-    medications: [
-      { name: "Lisinopril", dosage: "10mg", frequency: "Once daily", duration: "3 months" },
-      { name: "Metformin", dosage: "500mg", frequency: "Twice daily", duration: "3 months" }
-    ]
-  },
-  {
-    id: 2,
-    doctor: "Dr. Michael Chen",
-    date: "2025-02-08",
-    expiryDate: "2025-05-08",
-    hasFile: true,
-    medications: [
-      { name: "Atorvastatin", dosage: "20mg", frequency: "Once daily", duration: "3 months" }
-    ]
-  },
-  {
-    id: 3,
-    doctor: "Dr. Emily Rodriguez",
-    date: "2025-04-02",
-    expiryDate: "2025-07-02",
-    hasFile: false,
-    medications: [
-      { name: "Sertraline", dosage: "50mg", frequency: "Once daily", duration: "1 month" },
-      { name: "Loratadine", dosage: "10mg", frequency: "As needed", duration: "2 weeks" }
-    ]
-  }
-];
-
-// Active medications across all prescriptions
-const activeMedications = [
-  { name: "Lisinopril", dosage: "10mg", frequency: "Once daily", time: "Morning", lastTaken: "Today" },
-  { name: "Metformin", dosage: "500mg", frequency: "Twice daily", time: "Morning and Evening", lastTaken: "Today" },
-  { name: "Atorvastatin", dosage: "20mg", frequency: "Once daily", time: "Evening", lastTaken: "Yesterday" },
-  { name: "Sertraline", dosage: "50mg", frequency: "Once daily", time: "Morning", lastTaken: "Today" }
-];
+import { usePrescriptions } from "@/hooks/usePrescriptions";
+import { useMedications } from "@/hooks/useMedications";
 
 const Prescriptions = () => {
+  const { data: prescriptions = [], isLoading } = usePrescriptions();
+  const { data: allMedications = [] } = useMedications();
+
+  // Gather active medications from all prescriptions.
+  const activeMedications = allMedications
+    .filter((m) => m.last_taken && (m.last_taken.toLowerCase() === "today" || m.last_taken.toLowerCase() === "yesterday"))
+    .map((m) => ({
+      name: m.name,
+      dosage: m.dosage,
+      frequency: m.frequency,
+      time: m.time,
+      lastTaken: m.last_taken,
+    }));
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -101,48 +72,51 @@ const Prescriptions = () => {
                   className="w-full bg-background pl-8 md:w-1/2 lg:w-1/3"
                 />
               </div>
-              
+
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {prescriptions.map((prescription) => (
-                  <Card key={prescription.id}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center justify-between text-base">
-                        <span>Prescription #{prescription.id}</span>
-                        {prescription.hasFile && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </CardTitle>
-                      <CardDescription>
-                        {prescription.doctor}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>Issued: {new Date(prescription.date).toLocaleDateString()}</span>
+                {isLoading ? (
+                  <div>Loading...</div>
+                ) : prescriptions.map((prescription) => (
+                    <Card key={prescription.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center justify-between text-base">
+                          <span>Prescription #{prescription.id.slice(0, 8)}</span>
+                          {prescription.has_file && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {prescription.doctor?.name}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>Issued: {prescription.date ? new Date(prescription.date).toLocaleDateString() : ""}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>Valid until: {prescription.expiry_date ? new Date(prescription.expiry_date).toLocaleDateString() : ""}</span>
+                          </div>
+                          <div className="pt-2">
+                            <p className="text-sm font-medium">Medications:</p>
+                            <ul className="mt-1 space-y-1">
+                              {(prescription.prescription_medications || []).map((pm, idx) =>
+                                pm.medication ? (
+                                  <li key={idx} className="text-sm">
+                                    {pm.medication.name} ({pm.medication.dosage}) - {pm.medication.frequency}
+                                  </li>
+                                ) : null
+                              )}
+                            </ul>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>Valid until: {new Date(prescription.expiryDate).toLocaleDateString()}</span>
-                        </div>
-                        
-                        <div className="pt-2">
-                          <p className="text-sm font-medium">Medications:</p>
-                          <ul className="mt-1 space-y-1">
-                            {prescription.medications.map((med, idx) => (
-                              <li key={idx} className="text-sm">
-                                {med.name} ({med.dosage}) - {med.frequency}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))}
               </div>
               
               {prescriptions.length === 0 && (

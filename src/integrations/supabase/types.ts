@@ -9,6 +9,83 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string
+          date: string
+          doctor_id: string
+          id: string
+          status: string
+          time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          doctor_id: string
+          id?: string
+          status: string
+          time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          doctor_id?: string
+          id?: string
+          status?: string
+          time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctors: {
+        Row: {
+          address: string
+          created_at: string
+          hospital: string
+          id: string
+          last_visit: string | null
+          name: string
+          next_appointment: string | null
+          phone: string
+          specialty: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          hospital: string
+          id?: string
+          last_visit?: string | null
+          name: string
+          next_appointment?: string | null
+          phone: string
+          specialty: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          hospital?: string
+          id?: string
+          last_visit?: string | null
+          name?: string
+          next_appointment?: string | null
+          phone?: string
+          specialty?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       health_metrics: {
         Row: {
           created_at: string
@@ -38,6 +115,163 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      medications: {
+        Row: {
+          created_at: string
+          dosage: string
+          frequency: string
+          id: string
+          last_taken: string | null
+          name: string
+          time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          frequency: string
+          id?: string
+          last_taken?: string | null
+          name: string
+          time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          frequency?: string
+          id?: string
+          last_taken?: string | null
+          name?: string
+          time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      prescription_medications: {
+        Row: {
+          created_at: string
+          duration: string
+          id: string
+          medication_id: string
+          prescription_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration: string
+          id?: string
+          medication_id: string
+          prescription_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration?: string
+          id?: string
+          medication_id?: string
+          prescription_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_medications_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_medications_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          date: string
+          doctor_id: string
+          expiry_date: string
+          has_file: boolean
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          doctor_id: string
+          expiry_date: string
+          has_file?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          doctor_id?: string
+          expiry_date?: string
+          has_file?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          date: string
+          doctor_id: string
+          has_file: boolean
+          hospital: string
+          id: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          doctor_id: string
+          has_file?: boolean
+          hospital: string
+          id?: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          doctor_id?: string
+          has_file?: boolean
+          hospital?: string
+          id?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

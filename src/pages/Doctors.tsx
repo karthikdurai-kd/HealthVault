@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -7,45 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Phone, MapPin, Calendar, User, StarIcon, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import DoctorCard from "@/components/doctors/DoctorCard";
-
-// Sample doctor data
-const doctors = [
-  {
-    id: 1,
-    name: "Dr. Sarah Johnson",
-    specialty: "Cardiologist",
-    hospital: "City Heart Hospital",
-    address: "123 Medical Center Blvd",
-    phone: "(555) 123-4567",
-    lastVisit: "Mar 15, 2025",
-    nextAppointment: "May 20, 2025"
-  },
-  {
-    id: 2,
-    name: "Dr. Michael Chen",
-    specialty: "Endocrinologist",
-    hospital: "Metro Diabetes Clinic",
-    address: "456 Health Parkway",
-    phone: "(555) 234-5678",
-    lastVisit: "Feb 8, 2025",
-    nextAppointment: null
-  },
-  {
-    id: 3,
-    name: "Dr. Emily Rodriguez",
-    specialty: "Neurologist",
-    hospital: "Brain & Spine Center",
-    address: "789 Neurology Drive",
-    phone: "(555) 345-6789",
-    lastVisit: "Apr 2, 2025",
-    nextAppointment: "Jun 12, 2025"
-  }
-];
+import { useDoctors } from "@/hooks/useDoctors";
 
 const Doctors = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const filteredDoctors = doctors.filter(doctor => 
+  const { data = [], isLoading } = useDoctors();
+
+  const filteredDoctors = data.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
@@ -84,10 +51,20 @@ const Doctors = () => {
           
           {/* Doctors List */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredDoctors.map(doctor => (
-              <DoctorCard key={doctor.id} doctor={doctor} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div>Loading...</div>
+          ) : filteredDoctors.map(doctor => (
+            <DoctorCard key={doctor.id} doctor={{
+              ...doctor,
+              lastVisit: doctor.last_visit
+                ? new Date(doctor.last_visit).toLocaleDateString()
+                : "N/A",
+              nextAppointment: doctor.next_appointment
+                ? new Date(doctor.next_appointment).toLocaleDateString()
+                : null,
+            }} />
+          ))}
+        </div>
           
           {/* Empty State */}
           {filteredDoctors.length === 0 && (
@@ -116,28 +93,28 @@ const Doctors = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {doctors
-                  .filter(doctor => doctor.nextAppointment)
+                {filteredDoctors
+                  .filter(doctor => doctor.next_appointment)
                   .map(doctor => (
                     <div key={doctor.id} className="flex items-center space-x-4 rounded-lg border p-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-health-blue-100">
                         <Calendar className="h-5 w-5 text-health-blue-700" />
                       </div>
                       <div className="flex-1 space-y-1">
-                        <p className="font-medium leading-none">
-                          {doctor.name}
-                        </p>
+                        <p className="font-medium leading-none">{doctor.name}</p>
                         <p className="text-sm text-muted-foreground">
                           {doctor.specialty} • {doctor.hospital}
                         </p>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {doctor.nextAppointment}
+                        {doctor.next_appointment
+                          ? new Date(doctor.next_appointment).toLocaleDateString()
+                          : ""}
                       </div>
                     </div>
                   ))}
                   
-                {doctors.filter(doctor => doctor.nextAppointment).length === 0 && (
+                {!isLoading && filteredDoctors.filter(d => d.next_appointment).length === 0 && (
                   <div className="text-center py-4 text-muted-foreground">
                     No upcoming appointments scheduled
                   </div>

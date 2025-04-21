@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -7,71 +6,26 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Plus, FileText, Calendar, Search, Download, User, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useReports } from "@/hooks/useReports";
+import { useDoctors } from "@/hooks/useDoctors";
 
-// Sample reports data
-const reports = [
-  {
-    id: 1,
-    title: "Blood Test Results",
-    date: "2025-04-10",
-    doctor: "Dr. Sarah Johnson",
-    hospital: "City Heart Hospital",
-    type: "Lab Test",
-    hasFile: true
-  },
-  {
-    id: 2,
-    title: "Chest X-Ray",
-    date: "2025-03-22",
-    doctor: "Dr. Michael Chen",
-    hospital: "Metro Radiology Center",
-    type: "Radiology",
-    hasFile: true
-  },
-  {
-    id: 3,
-    title: "ECG Report",
-    date: "2025-02-15",
-    doctor: "Dr. Sarah Johnson",
-    hospital: "City Heart Hospital",
-    type: "Cardiology",
-    hasFile: true
-  },
-  {
-    id: 4,
-    title: "Lipid Profile",
-    date: "2025-01-30",
-    doctor: "Dr. Emily Rodriguez",
-    hospital: "Metro Diabetes Clinic",
-    type: "Lab Test",
-    hasFile: true
-  },
-  {
-    id: 5,
-    title: "Annual Physical Exam",
-    date: "2024-12-18",
-    doctor: "Dr. Michael Chen",
-    hospital: "General Medical Center",
-    type: "General",
-    hasFile: true
-  }
-];
-
-// Report types for filtering
 const reportTypes = ["All Types", "Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
 
 const Reports = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
-  
+  const { data: reports = [], isLoading } = useReports();
+  const { data: doctors = [] } = useDoctors();
+
   const filteredReports = reports.filter(report => {
-    const matchesSearch = 
+    const doc = report.doctor || doctors.find((d) => d.id === report.doctor_id) || {};
+    const matchesSearch =
       report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.doctor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (doc.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.hospital.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
     const matchesType = selectedType === "All Types" || report.type === selectedType;
-    
+
     return matchesSearch && matchesType;
   });
 
@@ -126,40 +80,45 @@ const Reports = () => {
           
           {/* Reports Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredReports.map((report) => (
-              <Card key={report.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-base">{report.title}</CardTitle>
-                      <CardDescription>{report.type}</CardDescription>
-                    </div>
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{new Date(report.date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{report.doctor}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground ml-6">
-                      {report.hospital}
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="border-t p-3">
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <Download className="h-4 w-4" />
-                    Download Report
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+            {isLoading ? (
+              <div>Loading...</div>
+            ) : filteredReports.map((report) => {
+                const doc = report.doctor || doctors.find((d) => d.id === report.doctor_id) || {};
+                return (
+                  <Card key={report.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-base">{report.title}</CardTitle>
+                          <CardDescription>{report.type}</CardDescription>
+                        </div>
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>{report.date ? new Date(report.date).toLocaleDateString() : ""}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>{doc.name}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground ml-6">
+                          {report.hospital}
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="border-t p-3">
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <Download className="h-4 w-4" />
+                        Download Report
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
           </div>
           
           {/* Empty State */}
