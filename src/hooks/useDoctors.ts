@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,6 +10,7 @@ export interface Doctor {
   phone: string;
   lastVisit: string | null;
   nextAppointment: string | null;
+  created_at?: string;
 }
 
 export function useDoctors() {
@@ -20,7 +20,7 @@ export function useDoctors() {
       const { data, error } = await supabase
         .from("doctors")
         .select("*")
-        .order("name");
+        .order("created_at", { ascending: false }); // Sort by creation date, newest first
       if (error) throw error;
       
       // Map the data to match the Doctor interface
@@ -33,6 +33,7 @@ export function useDoctors() {
         phone: doctor.phone,
         lastVisit: doctor.last_visit ? new Date(doctor.last_visit).toLocaleDateString() : null,
         nextAppointment: doctor.next_appointment ? new Date(doctor.next_appointment).toLocaleDateString() : null,
+        created_at: doctor.created_at
       }));
     },
   });

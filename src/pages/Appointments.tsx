@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -20,6 +19,32 @@ const Appointments = () => {
 
   const upcomingAppointments = appointments.filter(apt => apt.status === "upcoming");
   const pastAppointments = appointments.filter(apt => apt.status === "past");
+
+  // Function to format date with timezone handling
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    
+    try {
+      const datePart = dateString.split('T')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      
+      // Format the date as Month Day, Year
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
 
   async function handleCancel(id: string) {
     const { error } = await supabase
@@ -82,7 +107,7 @@ const Appointments = () => {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span>{appointment.date ? new Date(appointment.date).toLocaleDateString() : ""}</span>
+                              <span>{formatDate(appointment.date)}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -136,7 +161,7 @@ const Appointments = () => {
                             <div className="text-sm">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>{appointment.date ? new Date(appointment.date).toLocaleDateString() : ""}</span>
+                                <span>{formatDate(appointment.date)}</span>
                               </div>
                               <div className="flex items-center gap-1 mt-1">
                                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />

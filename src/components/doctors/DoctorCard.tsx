@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, MapPin, Calendar, User, Clock, Trash2 } from "lucide-react";
+import { Phone, MapPin, Calendar, User, Trash2 } from "lucide-react";
 
 interface Doctor {
   id: string;
@@ -48,11 +47,6 @@ const DoctorCard = ({ doctor, onDelete }: DoctorCardProps) => {
           <div className="flex items-center gap-2">
             <Phone className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm">{doctor.phone}</p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm">Last visit: {doctor.lastVisit}</p>
           </div>
           
           {doctor.nextAppointment && (

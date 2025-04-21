@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -12,13 +11,23 @@ import { AddDoctorForm } from "@/components/forms/AddDoctorForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAppointments } from "@/hooks/useAppointments";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 6;
 
 const Doctors = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { data = [], isLoading, refetch } = useDoctors();
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
   const [showDoctorForm, setShowDoctorForm] = useState(false);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -28,10 +37,54 @@ const Doctors = () => {
     doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredDoctors.length / ITEMS_PER_PAGE);
+  
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+  
+  // Reset to last page when total pages change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+  
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedDoctors = filteredDoctors.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   // Filter upcoming appointments
   const upcomingAppointments = appointments.filter(
     appointment => appointment.status === "upcoming"
   );
+
+  // Function to format date properly with timezone handling
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    
+    try {
+      const datePart = dateString.split('T')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      
+      const date = new Date(year, month - 1, day);
+      
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      
+      // Format the date as Month Day, Year
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
 
   async function handleDeleteDoctor(id: string) {
     setDeletingId(id);
@@ -47,6 +100,12 @@ const Doctors = () => {
         title: "Success",
         description: "Doctor deleted.",
       });
+      
+      // Check if this was the last item on the current page
+      if (paginatedDoctors.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
+      
       refetch?.();
     } else {
       toast({
@@ -93,7 +152,7 @@ const Doctors = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <div>Loading...</div>
-            ) : filteredDoctors.map(doctor => (
+            ) : paginatedDoctors.map(doctor => (
               <DoctorCard
                 key={doctor.id}
                 doctor={doctor}
@@ -101,6 +160,53 @@ const Doctors = () => {
               />
             ))}
           </div>
+          
+          {/* Pagination */}
+          {filteredDoctors.length > ITEMS_PER_PAGE && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={i}>
+                        <PaginationLink 
+                          isActive={currentPage === pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
           
           {/* Empty State */}
           {filteredDoctors.length === 0 && !isLoading && (
@@ -150,7 +256,7 @@ const Doctors = () => {
                         </p>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {appointment.date ? new Date(appointment.date).toLocaleDateString() : ""} • {appointment.time}
+                        {formatDate(appointment.date)} • {appointment.time}
                       </div>
                     </div>
                   ))
