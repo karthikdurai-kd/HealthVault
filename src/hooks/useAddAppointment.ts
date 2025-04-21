@@ -16,6 +16,11 @@ export function useAddAppointment() {
 
   return useMutation({
     mutationFn: async (appointment: AppointmentInput) => {
+      // Validate required fields
+      if (!appointment.doctor_id || !appointment.date || !appointment.time || !appointment.status) {
+        throw new Error("Required fields are missing");
+      }
+
       const { data, error } = await supabase
         .from("appointments")
         .insert([appointment])

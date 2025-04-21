@@ -18,6 +18,11 @@ export function useAddReport() {
 
   return useMutation({
     mutationFn: async (report: ReportInput) => {
+      // Validate required fields
+      if (!report.title || !report.date || !report.doctor_id || !report.hospital || !report.type) {
+        throw new Error("Required fields are missing");
+      }
+
       const { data, error } = await supabase
         .from("reports")
         .insert([report])

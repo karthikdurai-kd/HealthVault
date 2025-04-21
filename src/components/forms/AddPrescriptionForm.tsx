@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -82,9 +81,8 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   };
 
   const onSubmit = (data: FormValues) => {
-    // We ensure all required fields are present from form data
     const prescription = {
-      ...data, // doctor_id, date, and expiry_date are required by schema
+      ...data,
       has_file: false, // For now, we're not handling file uploads
       medications: prescriptionMeds,
     };

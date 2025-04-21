@@ -17,6 +17,11 @@ export function useAddMedication() {
 
   return useMutation({
     mutationFn: async (medication: MedicationInput) => {
+      // Validate required fields
+      if (!medication.name || !medication.dosage || !medication.frequency || !medication.time) {
+        throw new Error("Required fields are missing");
+      }
+
       const { data, error } = await supabase
         .from("medications")
         .insert([medication])

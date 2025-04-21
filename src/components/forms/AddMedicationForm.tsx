@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -59,7 +58,6 @@ export function AddMedicationForm({ open, onOpenChange }: AddMedicationFormProps
   });
 
   const onSubmit = (data: FormValues) => {
-    // All fields are required by the schema, so TypeScript knows they're defined
     addMedication.mutate(data, {
       onSuccess: () => {
         form.reset();

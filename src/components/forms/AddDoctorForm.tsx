@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -51,7 +50,6 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
   });
 
   const onSubmit = (data: FormValues) => {
-    // All properties in data are required by the schema, so TypeScript knows they're defined
     addDoctor.mutate(data, {
       onSuccess: () => {
         form.reset();

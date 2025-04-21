@@ -19,6 +19,11 @@ export function useAddDoctor() {
 
   return useMutation({
     mutationFn: async (doctor: DoctorInput) => {
+      // Validate required fields
+      if (!doctor.name || !doctor.specialty || !doctor.hospital || !doctor.address || !doctor.phone) {
+        throw new Error("Required fields are missing");
+      }
+
       const { data, error } = await supabase
         .from("doctors")
         .insert([doctor])

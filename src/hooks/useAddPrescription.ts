@@ -20,6 +20,11 @@ export function useAddPrescription() {
 
   return useMutation({
     mutationFn: async (prescription: PrescriptionInput) => {
+      // Validate required fields
+      if (!prescription.doctor_id || !prescription.date || !prescription.expiry_date) {
+        throw new Error("Required fields are missing");
+      }
+
       // First insert the prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
