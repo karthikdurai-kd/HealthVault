@@ -67,13 +67,12 @@ const DoctorCard = ({ doctor, onDelete }: DoctorCardProps) => {
         <Button
           variant="outline"
           size="sm"
-          className="flex-1"
+          className="w-full"
           onClick={() => onDelete && onDelete(doctor.id)}
         >
           <Trash2 className="h-4 w-4 mr-1" />
           Delete
         </Button>
-        <Button size="sm" className="flex-1">Schedule</Button>
       </CardFooter>
     </Card>
   );

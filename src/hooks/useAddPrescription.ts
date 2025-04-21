@@ -23,11 +23,23 @@ export function useAddPrescription() {
         throw new Error("Required fields are missing");
       }
 
-      // Ensure the prescriptions bucket exists
+      // Create bucket if it doesn't exist - make sure this happens before trying to access it
+      await supabase.storage.createBucket('prescriptions', {
+        public: true,
+        fileSizeLimit: 10485760
+      }).catch(error => {
+        // Bucket might already exist, which is fine
+        console.log("Bucket creation attempt:", error?.message);
+      });
+
+      // Ensure the prescriptions bucket exists and is accessible
       const bucketExists = await ensurePublicBucket('prescriptions');
       if (!bucketExists) {
+        console.error("Failed to create or access storage bucket for prescriptions");
         throw new Error("Failed to create or access storage bucket");
       }
+
+      console.log("Prescription bucket is accessible, proceeding with prescription save");
 
       // Insert the prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase
@@ -47,6 +59,7 @@ export function useAddPrescription() {
         throw prescriptionError;
       }
 
+      console.log("Prescription added successfully:", prescriptionData);
       return prescriptionData;
     },
     onSuccess: () => {
@@ -57,6 +70,7 @@ export function useAddPrescription() {
       });
     },
     onError: (error) => {
+      console.error("Error in mutation:", error);
       toast({
         title: "Error",
         description: `Failed to add prescription: ${error.message}`,

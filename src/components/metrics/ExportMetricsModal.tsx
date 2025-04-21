@@ -7,6 +7,7 @@ import { FormControl } from "@/components/ui/form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import jsPDF from "jspdf";
 import { Filter } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ExportMetricsModalProps {
   metrics: any[];
@@ -40,6 +41,7 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<string>("");
+  const { toast } = useToast();
 
   // All unique metric types
   const metricTypes = useMemo(() => getMetricTypes(metrics), [metrics]);
@@ -73,58 +75,76 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
   const handleExport = () => {
     const toExport = metrics.filter((m) => selectedIds.includes(m.id));
     if (toExport.length === 0) {
-      alert("Please select at least one metric to export.");
+      toast({
+        title: "No metrics selected",
+        description: "Please select at least one metric to export.",
+        variant: "destructive"
+      });
       return;
     }
     
-    // Create a new PDF document
-    const doc = new jsPDF();
-    
-    // Set the title
-    doc.setFontSize(16);
-    doc.text("Health Metric Records", 14, 22);
-    
-    // Initialize position
-    const startY = 34;
-    let y = startY;
-    
-    // Set normal font size for content
-    doc.setFontSize(10);
-    
-    // Loop through selected metrics
-    toExport.forEach((metric, i) => {
-      if (i > 0) y += 12;
-      doc.text(`Metric: ${metric.type}`, 14, y);
-      y += 6;
-      doc.text(
-        `Date: ${new Date(metric.date).toLocaleDateString()}   Value: ${
-          metric.value
-        } ${metricUnits[metric.type] || ""}`,
-        14,
-        y
-      );
-      y += 6;
-      if (metric.notes) {
-        doc.text(`Notes: ${metric.notes}`, 14, y);
+    try {
+      // Create a new PDF document
+      const doc = new jsPDF();
+      
+      // Set the title
+      doc.setFontSize(16);
+      doc.text("Health Metric Records", 14, 22);
+      
+      // Initialize position
+      const startY = 34;
+      let y = startY;
+      
+      // Set normal font size for content
+      doc.setFontSize(10);
+      
+      // Loop through selected metrics
+      toExport.forEach((metric, i) => {
+        if (i > 0) y += 12;
+        doc.text(`Metric: ${metric.type}`, 14, y);
         y += 6;
-      }
-      // Add space between records
-      y += 2;
-      // Next page if required
-      if (y > 270 && i < toExport.length - 1) {
-        doc.addPage();
-        y = 20;
-      }
-    });
-    
-    // Generate filename with current date
-    const filename = `HealthMetrics_${new Date().toISOString().split("T")[0]}.pdf`;
-    
-    // Save the PDF
-    doc.save(filename);
-    
-    // Close the modal
-    onClose();
+        doc.text(
+          `Date: ${new Date(metric.date).toLocaleDateString()}   Value: ${
+            metric.value
+          } ${metricUnits[metric.type] || ""}`,
+          14,
+          y
+        );
+        y += 6;
+        if (metric.notes) {
+          doc.text(`Notes: ${metric.notes}`, 14, y);
+          y += 6;
+        }
+        // Add space between records
+        y += 2;
+        // Next page if required
+        if (y > 270 && i < toExport.length - 1) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+      
+      // Generate filename with current date
+      const filename = `HealthMetrics_${new Date().toISOString().split("T")[0]}.pdf`;
+      
+      // Save the PDF
+      doc.save(filename);
+      
+      toast({
+        title: "Success",
+        description: `Exported ${toExport.length} metrics to PDF`,
+      });
+      
+      // Close the modal
+      onClose();
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error creating the PDF file.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Calculate if all visible items are selected

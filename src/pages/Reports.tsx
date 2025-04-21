@@ -7,11 +7,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Plus, FileText, Calendar, Search, Download, User, Filter, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useReports } from "@/hooks/useReports";
+import { useReports, useDeleteReport } from "@/hooks/useReports";
 import { useDoctors } from "@/hooks/useDoctors";
 import { AddReportForm } from "@/components/forms/AddReportForm";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 const reportTypes = ["All Types", "Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
 
@@ -22,6 +21,7 @@ const Reports = () => {
   const { data: doctors = [] } = useDoctors();
   const [showReportForm, setShowReportForm] = useState(false);
   const { toast } = useToast();
+  const deleteReport = useDeleteReport();
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
@@ -38,59 +38,22 @@ const Reports = () => {
   const handleDownloadFile = (fileUrl: string | null, reportTitle: string) => {
     if (!fileUrl) {
       toast({
-        title: "Error",
-        description: "No file available for this report",
+        title: "No file available",
+        description: "This report doesn't have an attached file",
         variant: "destructive",
       });
       return;
     }
     
+    console.log("Opening file URL:", fileUrl);
     // Open the file in a new tab
     window.open(fileUrl, "_blank");
   };
 
   // Function to delete a report
-  const handleDeleteReport = async (reportId: string, fileUrl: string | null) => {
-    try {
-      // If there's a file, delete it first
-      if (fileUrl) {
-        // Extract file path from URL
-        const filePathMatch = fileUrl.match(/\/storage\/v1\/object\/public\/reports\/(.*)/);
-        if (filePathMatch && filePathMatch[1]) {
-          const filePath = decodeURIComponent(filePathMatch[1]);
-          const { error: fileError } = await supabase.storage
-            .from('reports')
-            .remove([filePath]);
-          
-          if (fileError) {
-            console.error("Error deleting file:", fileError);
-            // Continue with report deletion even if file deletion fails
-          }
-        }
-      }
-
-      // Delete the report record
-      const { error } = await supabase
-        .from('reports')
-        .delete()
-        .eq('id', reportId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Report deleted successfully",
-      });
-      
-      // Refresh the reports list
-      refetch();
-    } catch (error) {
-      console.error("Error deleting report:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete report",
-        variant: "destructive",
-      });
+  const handleDeleteReport = (reportId: string, fileUrl: string | null) => {
+    if (confirm("Are you sure you want to delete this report?")) {
+      deleteReport.mutate({ id: reportId, fileUrl });
     }
   };
 

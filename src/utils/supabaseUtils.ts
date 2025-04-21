@@ -51,15 +51,18 @@ export async function uploadFileToBucket(
   filePrefix: string = ""
 ): Promise<string | null> {
   try {
-    // Ensure bucket exists
+    // Ensure bucket exists and is public
     const bucketExists = await ensurePublicBucket(bucketName);
     if (!bucketExists) {
-      throw new Error(`Storage bucket ${bucketName} is not available`);
+      console.error(`Storage bucket ${bucketName} is not available`);
+      return null;
     }
     
     // Generate file name
     const fileExt = file.name.split(".").pop();
     const fileName = `${filePrefix}${Date.now()}.${fileExt}`;
+    
+    console.log(`Attempting to upload ${fileName} to ${bucketName}`);
     
     // Upload file
     const { data, error } = await supabase.storage
@@ -71,13 +74,13 @@ export async function uploadFileToBucket(
       
     if (error) {
       console.error(`Error uploading to ${bucketName}:`, error);
-      throw error;
+      return null;
     }
     
     // Get public URL
     const { data: publicUrlData } = supabase.storage
       .from(bucketName)
-      .getPublicUrl(data.path); // Use data.path instead of fileName
+      .getPublicUrl(data.path);
       
     console.log(`File uploaded successfully to ${bucketName}:`, publicUrlData.publicUrl);
     return publicUrlData.publicUrl;

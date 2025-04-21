@@ -3,15 +3,16 @@ import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, FileText, Calendar, Search, User, Download } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, FileText, Calendar, Search, User, Download, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MedicationsList from "@/components/prescriptions/MedicationsList";
-import { usePrescriptions } from "@/hooks/usePrescriptions";
+import { usePrescriptions, useDeletePrescription } from "@/hooks/usePrescriptions";
 import { useMedications } from "@/hooks/useMedications";
 import { AddPrescriptionForm } from "@/components/forms/AddPrescriptionForm";
 import { AddMedicationForm } from "@/components/forms/AddMedicationForm";
+import { useToast } from "@/hooks/use-toast";
 
 const Prescriptions = () => {
   const { data: prescriptions = [], isLoading } = usePrescriptions();
@@ -19,6 +20,8 @@ const Prescriptions = () => {
   const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
   const [showMedicationForm, setShowMedicationForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+  const deletePrescription = useDeletePrescription();
 
   // Active medications
   const activeMedications = allMedications
@@ -47,9 +50,25 @@ const Prescriptions = () => {
   });
 
   // Function to download or view prescription file
-  const handleDownloadFile = (fileUrl: string | null, prescriptionId: string) => {
-    if (!fileUrl) return;
+  const handleDownloadFile = (fileUrl: string | null) => {
+    if (!fileUrl) {
+      toast({
+        title: "No file available",
+        description: "This prescription doesn't have an attached file",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("Opening file URL:", fileUrl);
     window.open(fileUrl, "_blank");
+  };
+
+  // Function to delete a prescription
+  const handleDeletePrescription = (prescriptionId: string, fileUrl: string | null) => {
+    if (confirm("Are you sure you want to delete this prescription?")) {
+      deletePrescription.mutate({ id: prescriptionId, fileUrl });
+    }
   };
 
   return (
@@ -120,18 +139,6 @@ const Prescriptions = () => {
                       <CardHeader className="pb-2">
                         <CardTitle className="flex items-center justify-between text-base">
                           <span>Prescription #{prescription.id.slice(0, 8)}</span>
-                          {prescription.has_file && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleDownloadFile(prescription.file_url, prescription.id)}
-                              aria-label="View prescription file"
-                              title="View prescription file"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          )}
                         </CardTitle>
                         <CardDescription>{prescription.doctor?.name}</CardDescription>
                       </CardHeader>
@@ -155,6 +162,26 @@ const Prescriptions = () => {
                           </div>
                         </div>
                       </CardContent>
+                      <CardFooter className="border-t p-3 flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 gap-2"
+                          onClick={() => handleDownloadFile(prescription.file_url)}
+                          disabled={!prescription.has_file || !prescription.file_url}
+                        >
+                          <Download className="h-4 w-4" />
+                          {prescription.has_file && prescription.file_url ? "View Prescription" : "No File Available"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => handleDeletePrescription(prescription.id, prescription.file_url)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </CardFooter>
                     </Card>
                   ))}
               </div>
