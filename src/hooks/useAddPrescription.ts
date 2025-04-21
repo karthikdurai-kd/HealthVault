@@ -24,7 +24,10 @@ export function useAddPrescription() {
       }
 
       // Ensure the prescriptions bucket exists
-      await ensurePublicBucket('prescriptions');
+      const bucketExists = await ensurePublicBucket('prescriptions');
+      if (!bucketExists) {
+        throw new Error("Failed to create or access storage bucket");
+      }
 
       // Insert the prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase

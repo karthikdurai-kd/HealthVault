@@ -76,12 +76,22 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
       alert("Please select at least one metric to export.");
       return;
     }
+    
+    // Create a new PDF document
     const doc = new jsPDF();
+    
+    // Set the title
     doc.setFontSize(16);
     doc.text("Health Metric Records", 14, 22);
+    
+    // Initialize position
     const startY = 34;
     let y = startY;
+    
+    // Set normal font size for content
     doc.setFontSize(10);
+    
+    // Loop through selected metrics
     toExport.forEach((metric, i) => {
       if (i > 0) y += 12;
       doc.text(`Metric: ${metric.type}`, 14, y);
@@ -106,7 +116,14 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
         y = 20;
       }
     });
-    doc.save(`HealthMetrics_${new Date().toISOString().split("T")[0]}.pdf`);
+    
+    // Generate filename with current date
+    const filename = `HealthMetrics_${new Date().toISOString().split("T")[0]}.pdf`;
+    
+    // Save the PDF
+    doc.save(filename);
+    
+    // Close the modal
     onClose();
   };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useAddReport } from "@/hooks/useAddReport";
 import { useDoctors } from "@/hooks/useDoctors";
-import { supabase } from "@/integrations/supabase/client";
+import { uploadFileToBucket, ensurePublicBucket } from "@/utils/supabaseUtils";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -93,40 +92,19 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
   // Create storage bucket if it doesn't exist
   useEffect(() => {
     if (open) {
-      const createBucketIfNeeded = async () => {
-        try {
-          // Check if the bucket exists first
-          const { data: buckets } = await supabase.storage.listBuckets();
-          const reportsBucket = buckets?.find(b => b.name === 'reports');
-          
-          if (!reportsBucket) {
-            await supabase.storage.createBucket('reports', {
-              public: true,
-              fileSizeLimit: 10485760, // 10MB
+      ensurePublicBucket('reports')
+        .then(success => {
+          if (!success) {
+            toast({
+              title: "Warning",
+              description: "Storage may not be available for file uploads",
+              variant: "destructive",
             });
-            
-            // Create public bucket policy
-            const { error: policyError } = await supabase.storage.from('reports').getPublicUrl('test');
-            if (policyError) {
-              console.error('Error with bucket policy, attempting to set public policy');
-              
-              // Try to set a public policy - this is a fallback
-              await supabase.rpc('create_public_bucket_policy', { bucket_name: 'reports' });
-            }
-            
-            console.log('Created reports bucket');
           }
-        } catch (error) {
-          console.error('Error checking/creating bucket:', error);
-          toast({
-            title: "Error",
-            description: "Failed to initialize storage. Please try again.",
-            variant: "destructive",
-          });
-        }
-      };
-      
-      createBucketIfNeeded();
+        })
+        .catch(error => {
+          console.error("Error checking storage:", error);
+        });
     }
   }, [open, toast]);
 
@@ -134,56 +112,29 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `report_${Date.now()}.${fileExt}`;
+      const uploadedUrl = await uploadFileToBucket(file, 'reports', 'report_');
       
-      // First, check if bucket exists and is accessible
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const reportsBucket = buckets?.find(b => b.name === 'reports');
+      setUploading(false);
       
-      if (!reportsBucket) {
-        toast({
-          title: "Error",
-          description: "Storage bucket not found. Please contact support.",
-          variant: "destructive",
-        });
-        setUploading(false);
-        return null;
-      }
-      
-      const { data, error } = await supabase.storage
-        .from("reports")
-        .upload(fileName, file, { 
-          cacheControl: "3600", 
-          upsert: true
-        });
-
-      if (error) {
-        console.error("Error uploading file:", error);
+      if (uploadedUrl) {
+        setUploadedFileUrl(uploadedUrl);
+        return uploadedUrl;
+      } else {
         toast({
           title: "Upload Failed",
-          description: `Error: ${error.message}`,
+          description: "Failed to upload file. Please try again.",
           variant: "destructive",
         });
-        setUploading(false);
         return null;
       }
-      
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage.from("reports").getPublicUrl(fileName);
-      
-      console.log("File uploaded successfully:", publicUrlData.publicUrl);
-      setUploading(false);
-      setUploadedFileUrl(publicUrlData.publicUrl);
-      return publicUrlData.publicUrl;
     } catch (error) {
       console.error("Error in file upload:", error);
+      setUploading(false);
       toast({
         title: "Upload Failed",
         description: "An unexpected error occurred during upload.",
         variant: "destructive",
       });
-      setUploading(false);
       return null;
     }
   };

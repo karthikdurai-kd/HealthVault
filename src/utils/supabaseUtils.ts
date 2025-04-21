@@ -26,9 +26,9 @@ export async function ensurePublicBucket(bucketName: string, fileSizeLimit: numb
       
       // Try to set up public access policies
       try {
-        // This is a placeholder for a Supabase RPC function that would set public policies
-        // You'd need to create this function in Supabase Studio if it doesn't exist
+        // Call the RPC function that would set public policies
         await supabase.rpc('create_public_bucket_policy', { bucket_name: bucketName });
+        console.log(`Set public policy for ${bucketName}`);
       } catch (policyError) {
         console.error(`Error setting public policy for ${bucketName}:`, policyError);
         // This may not be fatal if the bucket was created with public:true
@@ -77,7 +77,7 @@ export async function uploadFileToBucket(
     // Get public URL
     const { data: publicUrlData } = supabase.storage
       .from(bucketName)
-      .getPublicUrl(fileName);
+      .getPublicUrl(data.path); // Use data.path instead of fileName
       
     console.log(`File uploaded successfully to ${bucketName}:`, publicUrlData.publicUrl);
     return publicUrlData.publicUrl;

@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensurePublicBucket } from "@/utils/supabaseUtils";
 
 export interface ReportInput {
   title: string;
@@ -24,35 +25,13 @@ export function useAddReport() {
         throw new Error("Required fields are missing");
       }
 
-      // Check if the reports bucket exists, create if not
-      try {
-        const { data: buckets } = await supabase.storage.listBuckets();
-        const reportsBucket = buckets?.find(b => b.name === 'reports');
-        
-        if (!reportsBucket) {
-          console.log("Creating reports bucket");
-          const { error } = await supabase.storage.createBucket('reports', {
-            public: true,
-            fileSizeLimit: 10485760, // 10MB
-          });
-          
-          if (error) {
-            console.error("Error creating bucket:", error);
-            throw new Error(`Failed to create storage bucket: ${error.message}`);
-          }
-          
-          // Try to set a public policy
-          try {
-            await supabase.rpc('create_public_bucket_policy', { bucket_name: 'reports' });
-          } catch (policyError) {
-            console.error("Error setting public policy:", policyError);
-            // Continue anyway, as this may not be fatal
-          }
-        }
-      } catch (error) {
-        console.error("Error checking/creating bucket:", error);
+      // Ensure the reports bucket exists before proceeding
+      const bucketExists = await ensurePublicBucket('reports');
+      if (!bucketExists) {
+        throw new Error("Failed to create or access storage bucket");
       }
 
+      // Insert the report
       const { data, error } = await supabase
         .from("reports")
         .insert([report])

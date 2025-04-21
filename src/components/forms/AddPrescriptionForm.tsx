@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
-import { supabase } from "@/integrations/supabase/client";
 import { uploadFileToBucket, ensurePublicBucket } from "@/utils/supabaseUtils";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -87,9 +86,21 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   // Create storage bucket if it doesn't exist 
   useEffect(() => {
     if (open) {
-      ensurePublicBucket('prescriptions');
+      ensurePublicBucket('prescriptions')
+        .then(success => {
+          if (!success) {
+            toast({
+              title: "Warning",
+              description: "Storage may not be available for file uploads",
+              variant: "destructive",
+            });
+          }
+        })
+        .catch(error => {
+          console.error("Error checking storage:", error);
+        });
     }
-  }, [open]);
+  }, [open, toast]);
 
   // Upload file to Supabase Storage bucket 'prescriptions'
   const uploadFile = async (file: File) => {

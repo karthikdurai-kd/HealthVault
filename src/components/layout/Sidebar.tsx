@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -7,10 +8,8 @@ import {
   PieChart,
   Stethoscope,
   Calendar,
-  Settings,
-  PlusCircle
+  Settings
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -55,12 +54,6 @@ const Sidebar = () => {
             );
           })}
         </nav>
-      </div>
-      <div className="mt-auto p-4">
-        <Button className="w-full justify-start gap-2" variant="outline">
-          <PlusCircle className="h-4 w-4" />
-          Add Health Data
-        </Button>
       </div>
     </div>
   );
