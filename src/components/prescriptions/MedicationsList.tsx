@@ -19,7 +19,7 @@ const MedicationsList = ({ medications }: MedicationsListProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Current Medications</CardTitle>
+        <CardTitle>Medications</CardTitle>
         <CardDescription>
           Your prescribed medications and schedule
         </CardDescription>

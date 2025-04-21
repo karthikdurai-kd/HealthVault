@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { FormControl } from "@/components/ui/form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import jsPDF from "jspdf";
 import { Filter } from "lucide-react";
@@ -50,10 +51,6 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
   }, [filterType, metrics]);
 
   const isSelected = (id: string) => selectedIds.includes(id);
-  const visibleSelectedIds = filteredMetrics
-    .map((m) => m.id)
-    .filter((id) => selectedIds.includes(id));
-  const allVisibleSelected = filteredMetrics.length > 0 && visibleSelectedIds.length === filteredMetrics.length;
 
   const handleToggle = (id: string) => {
     setSelectedIds((prev) =>
@@ -113,6 +110,12 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
     onClose();
   };
 
+  // Calculate if all visible items are selected
+  const visibleSelectedIds = filteredMetrics
+    .map((m) => m.id)
+    .filter((id) => selectedIds.includes(id));
+  const allVisibleSelected = filteredMetrics.length > 0 && visibleSelectedIds.length === filteredMetrics.length;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -126,13 +129,17 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
           <Filter className="w-4 h-4" />
           <span>Filter metrics by type:</span>
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
+            <FormControl>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+            </FormControl>
             <SelectContent>
               <SelectItem value={""}>All</SelectItem>
               {metricTypes.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -200,4 +207,3 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
 };
 
 export default ExportMetricsModal;
-

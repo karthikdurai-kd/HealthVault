@@ -11,10 +11,12 @@ import { useDoctors } from "@/hooks/useDoctors";
 import { AddDoctorForm } from "@/components/forms/AddDoctorForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAppointments } from "@/hooks/useAppointments";
 
 const Doctors = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { data = [], isLoading, refetch } = useDoctors();
+  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
   const [showDoctorForm, setShowDoctorForm] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -24,6 +26,11 @@ const Doctors = () => {
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Filter upcoming appointments
+  const upcomingAppointments = appointments.filter(
+    appointment => appointment.status === "upcoming"
   );
 
   async function handleDeleteDoctor(id: string) {
@@ -117,43 +124,36 @@ const Doctors = () => {
             <CardHeader>
               <CardTitle>Upcoming Appointments</CardTitle>
               <CardDescription>
-                Your scheduled doctor visits
+                {appointmentsLoading 
+                  ? "Loading..." 
+                  : `You have ${upcomingAppointments.length} upcoming appointment${upcomingAppointments.length !== 1 ? "s" : ""}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredDoctors
-                  .filter(doctor => doctor.nextAppointment)
-                  .map(doctor => (
-                    <div key={doctor.id} className="flex items-center space-x-4 rounded-lg border p-3">
+                {appointmentsLoading ? (
+                  <div className="text-muted-foreground text-center py-4">Loading...</div>
+                ) : upcomingAppointments.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    No upcoming appointments scheduled
+                  </div>
+                ) : (
+                  upcomingAppointments.map(appointment => (
+                    <div key={appointment.id} className="flex items-center space-x-4 rounded-lg border p-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-health-blue-100">
                         <Calendar className="h-5 w-5 text-health-blue-700" />
                       </div>
                       <div className="flex-1 space-y-1">
-                        <p className="font-medium leading-none">{doctor.name}</p>
+                        <p className="font-medium leading-none">{appointment.doctor?.name || "Doctor"}</p>
                         <p className="text-sm text-muted-foreground">
-                          {doctor.specialty} • {doctor.hospital}
+                          {appointment.doctor?.specialty} • {appointment.doctor?.hospital}
                         </p>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {doctor.nextAppointment || ""}
+                        {appointment.date ? new Date(appointment.date).toLocaleDateString() : ""} • {appointment.time}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Delete doctor"
-                        onClick={() => handleDeleteDoctor(doctor.id)}
-                        disabled={deletingId === doctor.id}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
                     </div>
-                  ))}
-                  
-                {!isLoading && filteredDoctors.filter(d => d.nextAppointment).length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No upcoming appointments scheduled
-                  </div>
+                  ))
                 )}
               </div>
             </CardContent>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -14,11 +15,12 @@ import { AddMedicationForm } from "@/components/forms/AddMedicationForm";
 
 const Prescriptions = () => {
   const { data: prescriptions = [], isLoading } = usePrescriptions();
-  const { data: allMedications = [] } = useMedications();
+  const { data: allMedications = [], isLoading: medicationsLoading } = useMedications();
   const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
   const [showMedicationForm, setShowMedicationForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Active medications
   const activeMedications = allMedications
     .filter(
       (m) =>
@@ -96,17 +98,23 @@ const Prescriptions = () => {
                 />
               </div>
 
-              <MedicationsList medications={filteredMedications} />
+              {medicationsLoading ? (
+                <div className="py-4 text-center">Loading medications...</div>
+              ) : (
+                <MedicationsList medications={filteredMedications} />
+              )}
 
-              {/* Only show ONE empty state for no medications, following prescription tab logic */}
-              {filteredMedications.length === 0 && (
+              {!medicationsLoading && filteredMedications.length === 0 && (
                 <Card className="border-dashed">
                   <CardContent className="pt-6 text-center text-muted-foreground">
-                    No active medications
+                    {searchTerm ? (
+                      "No medications matched your search"
+                    ) : (
+                      "No active medications"
+                    )}
                   </CardContent>
                 </Card>
               )}
-
             </TabsContent>
 
             <TabsContent value="prescriptions" className="space-y-4">
@@ -180,28 +188,28 @@ const Prescriptions = () => {
                   ))}
               </div>
 
-              {filteredPrescriptions.length === 0 && !searchTerm && (
+              {filteredPrescriptions.length === 0 && !isLoading && (
                 <Card className="border-dashed">
                   <CardContent className="pt-6 text-center">
-                    <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <h3 className="mt-3 text-lg font-medium">No prescriptions found</h3>
-                    <p className="mb-4 mt-1 text-sm text-muted-foreground">
-                      Add your prescriptions to keep track of your medications.
-                    </p>
-                    <Button onClick={() => setShowPrescriptionForm(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Prescription
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {filteredPrescriptions.length === 0 && searchTerm && (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-center">
-                    <Search className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <h3 className="mt-3 text-lg font-medium">No prescriptions found</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search criteria.</p>
+                    {searchTerm ? (
+                      <>
+                        <Search className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <h3 className="mt-3 text-lg font-medium">No prescriptions found</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search criteria.</p>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <h3 className="mt-3 text-lg font-medium">No prescriptions found</h3>
+                        <p className="mb-4 mt-1 text-sm text-muted-foreground">
+                          Add your prescriptions to keep track of your medications.
+                        </p>
+                        <Button onClick={() => setShowPrescriptionForm(true)}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Prescription
+                        </Button>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               )}
