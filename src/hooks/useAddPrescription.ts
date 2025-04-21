@@ -8,6 +8,7 @@ export interface PrescriptionInput {
   date: string;
   expiry_date: string;
   has_file: boolean;
+  file_url?: string | null;
   medications?: {
     medication_id: string;
     duration: string;
@@ -32,7 +33,8 @@ export function useAddPrescription() {
           doctor_id: prescription.doctor_id,
           date: prescription.date,
           expiry_date: prescription.expiry_date,
-          has_file: prescription.has_file
+          has_file: prescription.has_file,
+          file_url: prescription.file_url
         }])
         .select()
         .single();

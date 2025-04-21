@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,21 +30,22 @@ import {
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
 import { useMedications } from "@/hooks/useMedications";
-import { X, Plus, Download, FileText } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   doctor_id: z.string().min(1, "Doctor is required"),
   date: z.string().min(1, "Date is required"),
   expiry_date: z.string().min(1, "Expiry date is required"),
-  file: z
-    .any()
+  file: z.any()
     .optional()
     .refine(
-      (file) =>
-        !file ||
-        (file instanceof File &&
-          ["application/pdf", "image/png", "image/jpeg"].includes(file.type)),
+      (files) => {
+        if (!files || files.length === 0) return true;
+        const file = files[0];
+        return file instanceof File && 
+          ["application/pdf", "image/png", "image/jpeg"].includes(file.type);
+      },
       "Only PDF, PNG, or JPEG files are accepted"
     ),
 });
@@ -82,6 +83,16 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
     },
   });
 
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setPrescriptionMeds([]);
+      setUploadedFileUrl(null);
+      setCurrentMed("");
+    }
+  }, [open, form]);
+
   const addMedicationToPrescription = () => {
     if (currentMed) {
       setPrescriptionMeds([
@@ -101,50 +112,72 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
     setUploading(true);
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}.${fileExt}`;
-    const { data, error } = await supabase.storage
-      .from("prescriptions")
-      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from("prescriptions")
+        .upload(fileName, file, { 
+          cacheControl: "3600", 
+          upsert: false,
+          contentType: file.type 
+        });
 
-    if (error) {
-      alert("Error uploading file: " + error.message);
+      if (error) {
+        console.error("Error uploading file:", error);
+        setUploading(false);
+        return null;
+      }
+      
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("prescriptions")
+        .getPublicUrl(fileName);
+
+      setUploading(false);
+      setUploadedFileUrl(publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error("Exception during upload:", error);
       setUploading(false);
       return null;
     }
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from("prescriptions")
-      .getPublicUrl(fileName);
-
-    setUploading(false);
-    setUploadedFileUrl(publicUrlData.publicUrl);
-    return publicUrlData.publicUrl;
   };
 
   const onSubmit = async (data: FormValues) => {
     let file_url = uploadedFileUrl;
-    if (data.file && data.file.length > 0) {
-      const uploadedUrl = await uploadFile(data.file[0]);
-      if (!uploadedUrl) return;
-      file_url = uploadedUrl;
+    
+    try {
+      if (data.file && data.file.length > 0) {
+        const uploadedUrl = await uploadFile(data.file[0]);
+        if (!uploadedUrl) {
+          form.setError("file", { 
+            message: "Failed to upload file. Please try again." 
+          });
+          return;
+        }
+        file_url = uploadedUrl;
+      }
+
+      const prescription = {
+        doctor_id: data.doctor_id,
+        date: data.date,
+        expiry_date: data.expiry_date,
+        has_file: !!file_url,
+        file_url: file_url || null,
+        medications: prescriptionMeds,
+      };
+
+      addPrescription.mutate(prescription, {
+        onSuccess: () => {
+          form.reset();
+          setPrescriptionMeds([]);
+          setUploadedFileUrl(null);
+          onOpenChange(false);
+        },
+      });
+    } catch (error) {
+      console.error("Error submitting form:", error);
     }
-
-    const prescription = {
-      doctor_id: data.doctor_id,
-      date: data.date,
-      expiry_date: data.expiry_date,
-      has_file: !!file_url,
-      file_url: file_url || null,
-      medications: prescriptionMeds,
-    };
-
-    addPrescription.mutate(prescription, {
-      onSuccess: () => {
-        form.reset();
-        setPrescriptionMeds([]);
-        setUploadedFileUrl(null);
-        onOpenChange(false);
-      },
-    });
   };
 
   return (
@@ -223,7 +256,7 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
             <FormField
               control={form.control}
               name="file"
-              render={({ field }) => (
+              render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
                   <FormLabel>Upload Prescription File</FormLabel>
                   <FormControl>
@@ -231,9 +264,12 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                       type="file"
                       accept=".pdf,image/png,image/jpeg"
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) field.onChange([file]);
+                        const files = e.target.files;
+                        if (files?.length) {
+                          onChange(files);
+                        }
                       }}
+                      {...fieldProps}
                       className="file:mr-4 file:py-2 file:px-4
                       file:rounded-full file:border-0
                       file:text-sm file:font-semibold
