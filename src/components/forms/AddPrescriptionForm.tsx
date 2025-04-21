@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,9 +28,10 @@ import {
 } from "@/components/ui/select";
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
-import { uploadFileToBucket, ensurePublicBucket } from "@/utils/supabaseUtils";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { ensurePublicBucket } from "@/utils/supabaseUtils";
 
 const formSchema = z.object({
   doctor_id: z.string().min(1, "Doctor is required"),
@@ -78,24 +78,17 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   // Reset form when dialog is closed
   useEffect(() => {
     if (!open) {
-      form.reset();
-      setUploadedFileUrl(null);
+      setTimeout(() => {
+        form.reset();
+        setUploadedFileUrl(null);
+      }, 300);
     }
   }, [open, form]);
 
-  // Create storage bucket if it doesn't exist 
+  // Create storage bucket prescriptions if it doesn't exist
   useEffect(() => {
     if (open) {
       ensurePublicBucket('prescriptions')
-        .then(success => {
-          if (!success) {
-            toast({
-              title: "Warning",
-              description: "Storage may not be available for file uploads",
-              variant: "destructive",
-            });
-          }
-        })
         .catch(error => {
           console.error("Error checking storage:", error);
         });
@@ -106,13 +99,20 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      const url = await uploadFileToBucket(file, 'prescriptions', 'prescription_');
-      setUploading(false);
+      const fileExt = file.name.split(".").pop();
+      const fileName = `prescription_${Date.now()}.${fileExt}`;
       
-      if (url) {
-        setUploadedFileUrl(url);
-        return url;
-      } else {
+      // Upload directly
+      const { data, error } = await supabase.storage
+        .from('prescriptions')
+        .upload(fileName, file, { 
+          cacheControl: "3600", 
+          upsert: true 
+        });
+        
+      if (error) {
+        console.error(`Error uploading to prescriptions:`, error);
+        setUploading(false);
         toast({
           title: "Upload Failed",
           description: "Failed to upload file. Please try again.",
@@ -120,6 +120,15 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
         });
         return null;
       }
+      
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('prescriptions')
+        .getPublicUrl(data.path);
+      
+      setUploading(false);
+      setUploadedFileUrl(publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
     } catch (error) {
       console.error("Exception during upload:", error);
       setUploading(false);

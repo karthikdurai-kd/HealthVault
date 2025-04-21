@@ -89,19 +89,10 @@ export function AddReportForm({ open, onOpenChange }: AddReportFormProps) {
     }
   }, [open, form]);
 
-  // Create storage bucket if it doesn't exist
+  // Create storage bucket reports if it doesn't exist
   useEffect(() => {
     if (open) {
       ensurePublicBucket('reports')
-        .then(success => {
-          if (!success) {
-            toast({
-              title: "Warning",
-              description: "Storage may not be available for file uploads",
-              variant: "destructive",
-            });
-          }
-        })
         .catch(error => {
           console.error("Error checking storage:", error);
         });

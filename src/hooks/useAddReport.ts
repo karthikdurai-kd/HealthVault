@@ -1,8 +1,6 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ensurePublicBucket } from "@/utils/supabaseUtils";
 
 export interface ReportInput {
   title: string;
@@ -24,26 +22,6 @@ export function useAddReport() {
       if (!report.title || !report.date || !report.doctor_id || !report.hospital || !report.type) {
         throw new Error("Required fields are missing");
       }
-
-      console.log("Adding report with these details:", report);
-
-      // Create bucket if it doesn't exist - make sure this happens before trying to access it
-      await supabase.storage.createBucket('reports', {
-        public: true,
-        fileSizeLimit: 10485760
-      }).catch(error => {
-        // Bucket might already exist, which is fine
-        console.log("Bucket creation attempt:", error?.message);
-      });
-
-      // Ensure the reports bucket exists before proceeding
-      const bucketExists = await ensurePublicBucket('reports');
-      if (!bucketExists) {
-        console.error("Failed to create or access reports storage bucket");
-        throw new Error("Failed to create or access storage bucket");
-      }
-
-      console.log("Reports bucket is accessible, proceeding with report save");
 
       // Insert the report
       const { data, error } = await supabase

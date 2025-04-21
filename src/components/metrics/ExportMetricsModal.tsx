@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,11 +5,20 @@ import { Button } from "@/components/ui/button";
 import { FormControl } from "@/components/ui/form";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface Metric {
+  id: string;
+  type: string;
+  value: string | number;
+  date: string;
+  notes?: string;
+}
+
 interface ExportMetricsModalProps {
-  metrics: any[];
+  metrics: Metric[];
   open: boolean;
   onClose: () => void;
 }
@@ -26,7 +34,7 @@ const metricUnits: Record<string, string> = {
   "Oxygen Saturation": "%",
 };
 
-const getMetricTypes = (metrics: any[]) => {
+const getMetricTypes = (metrics: Metric[]) => {
   const types: string[] = [];
   metrics.forEach((m) => {
     if (m.type && !types.includes(m.type)) types.push(m.type);
@@ -48,7 +56,7 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
 
   // Filter metrics if a filterType is selected
   const filteredMetrics = useMemo(() => {
-    if (!filterType) return metrics;
+    if (!filterType || filterType === "all") return metrics;
     return metrics.filter((m) => m.type === filterType);
   }, [filterType, metrics]);
 
@@ -91,37 +99,42 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
       doc.setFontSize(16);
       doc.text("Health Metric Records", 14, 22);
       
-      // Initialize position
-      const startY = 34;
-      let y = startY;
+      // Create table header data
+      const headers = [['Date', 'Metric Type', 'Value', 'Notes']];
       
-      // Set normal font size for content
-      doc.setFontSize(10);
+      // Create table body data
+      const data = toExport.map(metric => [
+        new Date(metric.date).toLocaleDateString(),
+        metric.type,
+        `${metric.value} ${metricUnits[metric.type] || ""}`,
+        metric.notes || "-"
+      ]);
       
-      // Loop through selected metrics
-      toExport.forEach((metric, i) => {
-        if (i > 0) y += 12;
-        doc.text(`Metric: ${metric.type}`, 14, y);
-        y += 6;
-        doc.text(
-          `Date: ${new Date(metric.date).toLocaleDateString()}   Value: ${
-            metric.value
-          } ${metricUnits[metric.type] || ""}`,
-          14,
-          y
-        );
-        y += 6;
-        if (metric.notes) {
-          doc.text(`Notes: ${metric.notes}`, 14, y);
-          y += 6;
-        }
-        // Add space between records
-        y += 2;
-        // Next page if required
-        if (y > 270 && i < toExport.length - 1) {
-          doc.addPage();
-          y = 20;
-        }
+      // Generate the table
+      autoTable(doc, {
+        head: headers,
+        body: data,
+        startY: 30,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontSize: 12,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 40 }, // Date
+          1: { cellWidth: 50 }, // Metric Type
+          2: { cellWidth: 40, halign: 'right' }, // Value
+          3: { cellWidth: 'auto' } // Notes
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5,
+          overflow: 'linebreak'
+        },
+        margin: { top: 30 }
       });
       
       // Generate filename with current date
@@ -166,13 +179,11 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
           <Filter className="w-4 h-4" />
           <span>Filter metrics by type:</span>
           <Select value={filterType} onValueChange={setFilterType}>
-            <FormControl>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-            </FormControl>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value={""}>All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {metricTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}

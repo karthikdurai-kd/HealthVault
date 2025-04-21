@@ -1,68 +1,34 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Creates a bucket if it doesn't exist and sets it to public
- */
-export async function ensurePublicBucket(bucketName: string, fileSizeLimit: number = 10485760) {
+
+// Check if the bucket exists
+export async function ensurePublicBucket(bucketName: string) {
   try {
-    // Check if bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const existingBucket = buckets?.find(b => b.name === bucketName);
+    const { data: buckets, error } = await supabase.storage.listBuckets();
     
-    if (!existingBucket) {
-      // Create bucket if it doesn't exist
-      const { error: createError } = await supabase.storage.createBucket(bucketName, {
-        public: true,
-        fileSizeLimit: fileSizeLimit
-      });
-      
-      if (createError) {
-        console.error(`Error creating bucket ${bucketName}:`, createError);
-        throw createError;
-      }
-      
-      console.log(`Created ${bucketName} bucket`);
-      
-      // Try to set up public access policies
-      try {
-        // Call the RPC function that would set public policies
-        await supabase.rpc('create_public_bucket_policy', { bucket_name: bucketName });
-        console.log(`Set public policy for ${bucketName}`);
-      } catch (policyError) {
-        console.error(`Error setting public policy for ${bucketName}:`, policyError);
-        // This may not be fatal if the bucket was created with public:true
-      }
+    if (error) {
+      console.error(`Error listing buckets:`, error);
+      return false;
     }
     
-    return true;
+    const existingBucket = buckets?.find(b => b.name === bucketName);
+    return !!existingBucket; // Return true if bucket exists
   } catch (error) {
-    console.error(`Error ensuring public bucket ${bucketName}:`, error);
+    console.error(`Error checking bucket ${bucketName}:`, error);
     return false;
   }
 }
 
-/**
- * Uploads a file to a Supabase storage bucket
- */
+// Upload file to bucket
 export async function uploadFileToBucket(
   file: File, 
   bucketName: string, 
   filePrefix: string = ""
 ): Promise<string | null> {
   try {
-    // Ensure bucket exists and is public
-    const bucketExists = await ensurePublicBucket(bucketName);
-    if (!bucketExists) {
-      console.error(`Storage bucket ${bucketName} is not available`);
-      return null;
-    }
-    
     // Generate file name
     const fileExt = file.name.split(".").pop();
     const fileName = `${filePrefix}${Date.now()}.${fileExt}`;
-    
-    console.log(`Attempting to upload ${fileName} to ${bucketName}`);
     
     // Upload file
     const { data, error } = await supabase.storage
@@ -82,7 +48,6 @@ export async function uploadFileToBucket(
       .from(bucketName)
       .getPublicUrl(data.path);
       
-    console.log(`File uploaded successfully to ${bucketName}:`, publicUrlData.publicUrl);
     return publicUrlData.publicUrl;
   } catch (error) {
     console.error(`Error uploading file to ${bucketName}:`, error);
@@ -90,9 +55,7 @@ export async function uploadFileToBucket(
   }
 }
 
-/**
- * Deletes a file from a Supabase storage bucket
- */
+// Delete file from bucket
 export async function deleteFileFromBucket(fileUrl: string, bucketName: string): Promise<boolean> {
   try {
     // Extract file path from URL
