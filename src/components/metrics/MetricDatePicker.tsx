@@ -34,12 +34,13 @@ const MetricDatePicker: React.FC<MetricDatePickerProps> = ({ date, setDate }) =>
             {date ? format(date, "PPP") : "Select date"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
+        <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
             selected={date}
             onSelect={date => date && setDate(date)}
             initialFocus
+            className={cn("p-3 pointer-events-auto")}
           />
         </PopoverContent>
       </Popover>

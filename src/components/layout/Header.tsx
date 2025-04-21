@@ -1,7 +1,8 @@
 
-import { Bell, Settings, User } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import UserMenu from "@/components/layout/UserMenu";
 
 const Header = () => {
   return (
@@ -12,19 +13,13 @@ const Header = () => {
         </span>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-health-danger"></span>
+        {/* Removed Bell/Notification button */}
+        <Button variant="ghost" size="icon" asChild>
+          <a href="/settings" aria-label="Settings">
+            <Settings className="h-5 w-5" />
+          </a>
         </Button>
-        <Button variant="ghost" size="icon">
-          <Settings className="h-5 w-5" />
-        </Button>
-        <Avatar>
-          <AvatarImage src="" alt="User" />
-          <AvatarFallback className="bg-health-blue-100 text-health-blue-700">
-            <User className="h-5 w-5" />
-          </AvatarFallback>
-        </Avatar>
+        <UserMenu />
       </div>
     </header>
   );

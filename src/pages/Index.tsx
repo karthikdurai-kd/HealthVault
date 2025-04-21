@@ -7,7 +7,7 @@ import HealthStatsGrid from "@/components/dashboard/HealthStatsGrid";
 import HealthMetricsChart from "@/components/dashboard/HealthMetricsChart";
 import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 import RecentMedications from "@/components/dashboard/RecentMedications";
-import { BellRing, Upload, Plus } from "lucide-react";
+import { Upload, Plus } from "lucide-react";
 import { useLatestMetrics } from "@/hooks/useLatestMetrics";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AddHealthMetricForm } from "@/components/forms/AddHealthMetricForm";
@@ -50,19 +50,8 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Alerts/Reminders */}
-          <div className="rounded-lg border bg-card p-4 text-card-foreground">
-            <div className="flex items-start gap-4">
-              <BellRing className="mt-0.5 h-5 w-5 text-health-warning" />
-              <div>
-                <h3 className="font-medium">Medication Reminder</h3>
-                <p className="text-sm text-muted-foreground">
-                  Don't forget to take your evening medications at 8:00 PM today
-                </p>
-              </div>
-            </div>
-          </div>
-          
+          {/* Removed notification/reminder block */}
+
           {/* Health Stats Grid */}
           <HealthStatsGrid latestMetrics={metrics} loading={loading}/>
           

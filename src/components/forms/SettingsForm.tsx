@@ -10,10 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 type FormValues = {
   display_name: string;
   avatar_url: string;
+  email?: string;
 };
 
 export function SettingsForm() {
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   const {
     register,
@@ -24,9 +27,9 @@ export function SettingsForm() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const user = supabase.auth.getUser(); // getUser() returns a promise
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) return;
+      setEmail(sessionData.session.user.email);
       const userId = sessionData.session.user.id;
       const { data, error } = await supabase
         .from("profiles")
@@ -79,6 +82,29 @@ export function SettingsForm() {
     }
   };
 
+  const handleSendReset = async () => {
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) {
+      toast({
+        title: "Error sending reset email",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Password Reset",
+        description: "Reset email sent!",
+      });
+    }
+    setResetting(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-md space-y-6">
       <div>
@@ -88,6 +114,18 @@ export function SettingsForm() {
       <div>
         <Label htmlFor="avatar_url">Avatar URL</Label>
         <Input id="avatar_url" {...register("avatar_url")} />
+      </div>
+      <div>
+        <Label>Email Address</Label>
+        <Input value={email} disabled className="cursor-not-allowed" />
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" variant="secondary" disabled={resetting} onClick={handleSendReset}>
+          {resetting ? "Sending..." : "Send Password Reset Email"}
+        </Button>
+        <Button type="button" variant="destructive" onClick={handleLogout}>
+          Log out
+        </Button>
       </div>
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Saving..." : "Save Settings"}
