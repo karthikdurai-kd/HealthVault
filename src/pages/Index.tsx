@@ -30,17 +30,10 @@ const Index = () => {
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
               <p className="text-muted-foreground">
-                Welcome back! Here's an overview of your health
+                Welcome back!  Here's an overview of your health
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowHealthMetricForm(true)}>
-                Log Health Metric
-              </Button>
-              <Button onClick={() => setShowReportForm(true)}>
-                Upload Report
-              </Button>
-            </div>
+         
           </div>
 
           {/* Health Stats Grid */}

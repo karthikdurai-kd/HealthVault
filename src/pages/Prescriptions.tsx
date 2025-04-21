@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,34 @@ import { useMedications } from "@/hooks/useMedications";
 import { AddPrescriptionForm } from "@/components/forms/AddPrescriptionForm";
 import { AddMedicationForm } from "@/components/forms/AddMedicationForm";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
+const ITEMS_PER_PAGE = 6;
+
+interface Prescription {
+  id: string;
+  doctor?: { name: string };
+  date: string;
+  expiry_date: string;
+  file_url: string | null;
+}
 const Prescriptions = () => {
   const { data: prescriptions = [], isLoading } = usePrescriptions();
   const { data: allMedications = [], isLoading: medicationsLoading } = useMedications();
@@ -22,6 +48,9 @@ const Prescriptions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const deletePrescription = useDeletePrescription();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [prescriptionToDelete, setPrescriptionToDelete] = useState<Prescription | null>(null);
 
   // Active medications
   const activeMedications = allMedications
@@ -49,6 +78,24 @@ const Prescriptions = () => {
     );
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredPrescriptions.length / ITEMS_PER_PAGE);
+  
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+  
+  // check if current page is valid
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+  
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedPrescriptions = filteredPrescriptions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   // Function to download or view prescription file
   const handleDownloadFile = (fileUrl: string | null) => {
     if (!fileUrl) {
@@ -64,10 +111,28 @@ const Prescriptions = () => {
     window.open(fileUrl, "_blank");
   };
 
-  // Function to delete a prescription
-  const handleDeletePrescription = (prescriptionId: string, fileUrl: string | null) => {
-    if (confirm("Are you sure you want to delete this prescription?")) {
-      deletePrescription.mutate({ id: prescriptionId, fileUrl });
+  // Function to open delete dialog
+  const handleDeletePrescription = (prescription: Prescription) => {
+    setPrescriptionToDelete(prescription);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (prescriptionToDelete) {
+      deletePrescription.mutate(
+        { id: prescriptionToDelete.id, fileUrl: prescriptionToDelete.file_url },
+        {
+          onSuccess: () => {
+            setShowDeleteDialog(false);
+            setPrescriptionToDelete(null);
+            
+            // Check if this was the last item on the current page
+            if (paginatedPrescriptions.length === 1 && currentPage > 1) {
+              setCurrentPage(currentPage - 1);
+            }
+          }
+        }
+      );
     }
   };
 
@@ -134,7 +199,8 @@ const Prescriptions = () => {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
                   <div>Loading...</div>
-                ) : filteredPrescriptions.map((prescription) => (
+                ) : paginatedPrescriptions.length > 0 ? (
+                  paginatedPrescriptions.map((prescription) => (
                     <Card key={prescription.id}>
                       <CardHeader className="pb-2">
                         <CardTitle className="flex items-center justify-between text-base">
@@ -177,15 +243,64 @@ const Prescriptions = () => {
                           variant="outline"
                           size="sm"
                           className="gap-2"
-                          onClick={() => handleDeletePrescription(prescription.id, prescription.file_url)}
+                          onClick={() => handleDeletePrescription(prescription)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </CardFooter>
                     </Card>
-                  ))}
+                  ))
+                ) : null}
               </div>
 
+              {/* Pagination for prescriptions */}
+              {filteredPrescriptions.length > ITEMS_PER_PAGE && (
+                <div className="mt-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <PaginationItem key={i}>
+                            <PaginationLink 
+                              isActive={currentPage === pageNumber}
+                              onClick={() => setCurrentPage(pageNumber)}
+                            >
+                              {pageNumber}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+
+              {/* No prescriptions message */}
               {filteredPrescriptions.length === 0 && !isLoading && (
                 <Card className="border-dashed">
                   <CardContent className="pt-6 text-center">
@@ -217,6 +332,27 @@ const Prescriptions = () => {
           {/* Forms */}
           <AddPrescriptionForm open={showPrescriptionForm} onOpenChange={setShowPrescriptionForm} />
           <AddMedicationForm open={showMedicationForm} onOpenChange={setShowMedicationForm} />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this prescription from your records.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={confirmDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deletePrescription.isPending ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
     </div>

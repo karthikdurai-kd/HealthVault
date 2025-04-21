@@ -52,7 +52,13 @@ export function AddDoctorForm({ open, onOpenChange }: AddDoctorFormProps) {
   });
 
   const onSubmit = (data: FormValues) => {
-    addDoctor.mutate(data, {
+    addDoctor.mutate({
+      name: data.name,
+      specialty: data.specialty,
+      hospital: data.hospital,
+      address: data.address,
+      phone: data.phone,
+    }, {
       onSuccess: () => {
         form.reset(defaultValues); // <-- Use complete values for reset
         onOpenChange(false);

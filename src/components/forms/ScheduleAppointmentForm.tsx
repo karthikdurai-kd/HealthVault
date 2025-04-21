@@ -57,7 +57,9 @@ export function ScheduleAppointmentForm({ open, onOpenChange }: ScheduleAppointm
 
   const onSubmit = (data: FormValues) => {
     const appointment = {
-      ...data,
+      doctor_id: data.doctor_id,
+      date: data.date,
+      time: data.time,
       status: "upcoming" as const
     };
     

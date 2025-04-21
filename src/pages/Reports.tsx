@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,37 @@ import { useReports, useDeleteReport } from "@/hooks/useReports";
 import { useDoctors } from "@/hooks/useDoctors";
 import { AddReportForm } from "@/components/forms/AddReportForm";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 
 const reportTypes = ["All Types", "Lab Test", "Radiology", "Cardiology", "General", "Specialist"];
+const ITEMS_PER_PAGE = 6;
+
+interface Report {
+  id: string;
+  title: string;
+  type: string;
+  date: string;
+  doctor?: { name: string };
+  hospital: string;
+  file_url: string | null;
+}
 
 const Reports = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,6 +50,11 @@ const Reports = () => {
   const [showReportForm, setShowReportForm] = useState(false);
   const { toast } = useToast();
   const deleteReport = useDeleteReport();
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Delete dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
@@ -33,6 +66,24 @@ const Reports = () => {
 
     return matchesSearch && matchesType;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
+  
+  // check if current page is valid when total pages change
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+  
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedReports = filteredReports.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedType]);
 
   // Function to download or view report file
   const handleDownloadFile = (fileUrl: string | null, reportTitle: string) => {
@@ -50,10 +101,27 @@ const Reports = () => {
     window.open(fileUrl, "_blank");
   };
 
-  // Function to delete a report
-  const handleDeleteReport = (reportId: string, fileUrl: string | null) => {
-    if (confirm("Are you sure you want to delete this report?")) {
-      deleteReport.mutate({ id: reportId, fileUrl });
+  // Function to open delete dialog
+  const handleDeleteReport = (report: Report) => {
+    setReportToDelete(report);
+    setShowDeleteDialog(true);
+  };
+
+  // Function to confirm deletion
+  const confirmDelete = () => {
+    if (reportToDelete) {
+      deleteReport.mutate(
+        { id: reportToDelete.id, fileUrl: reportToDelete.file_url },
+        {
+          onSuccess: () => {
+            setShowDeleteDialog(false);
+            setReportToDelete(null);
+            if (paginatedReports.length === 1 && currentPage > 1) {
+              setCurrentPage(currentPage - 1);
+            }
+          }
+        }
+      );
     }
   };
 
@@ -110,8 +178,8 @@ const Reports = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <div>Loading...</div>
-            ) : filteredReports.length > 0 ? (
-              filteredReports.map((report) => (
+            ) : paginatedReports.length > 0 ? (
+              paginatedReports.map((report) => (
                 <Card key={report.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
@@ -150,7 +218,7 @@ const Reports = () => {
                       variant="outline"
                       size="sm"
                       className="gap-2"
-                      onClick={() => handleDeleteReport(report.id, report.file_url)}
+                      onClick={() => handleDeleteReport(report)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -176,8 +244,77 @@ const Reports = () => {
             )}
           </div>
 
+          {/* Pagination */}
+          {filteredReports.length > ITEMS_PER_PAGE && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={i}>
+                        <PaginationLink 
+                          isActive={currentPage === pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+
           {/* Add Report Form */}
           <AddReportForm open={showReportForm} onOpenChange={setShowReportForm} />
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the report
+                  "{reportToDelete?.title}" from your records.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={confirmDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteReport.isPending ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
     </div>

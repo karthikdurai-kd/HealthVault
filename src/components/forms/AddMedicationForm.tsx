@@ -58,7 +58,12 @@ export function AddMedicationForm({ open, onOpenChange }: AddMedicationFormProps
   });
 
   const onSubmit = (data: FormValues) => {
-    addMedication.mutate(data, {
+    addMedication.mutate({
+      name: data.name,
+      dosage: data.dosage,
+      frequency: data.frequency,
+      time: data.time,
+    }, {
       onSuccess: () => {
         form.reset();
         onOpenChange(false);
