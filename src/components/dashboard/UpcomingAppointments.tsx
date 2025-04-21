@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 const UpcomingAppointments = () => {
   const { data: appointments = [], isLoading, refetch } = useAppointments();
   const { toast } = useToast();
+  // Only use backend-synced upcoming appointments, no dummy data
   const upcoming = appointments.filter(a => a.status === "upcoming");
 
   // Cancel appointment handler

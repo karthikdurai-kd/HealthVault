@@ -1,9 +1,11 @@
 
-import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState, useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import jsPDF from "jspdf";
+import { Filter } from "lucide-react";
 
 interface ExportMetricsModalProps {
   metrics: any[];
@@ -22,14 +24,36 @@ const metricUnits: Record<string, string> = {
   "Oxygen Saturation": "%",
 };
 
+const getMetricTypes = (metrics: any[]) => {
+  const types: string[] = [];
+  metrics.forEach((m) => {
+    if (m.type && !types.includes(m.type)) types.push(m.type);
+  });
+  return types;
+};
+
 const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
   metrics,
   open,
   onClose,
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [filterType, setFilterType] = useState<string>("");
+
+  // All unique metric types
+  const metricTypes = useMemo(() => getMetricTypes(metrics), [metrics]);
+
+  // Filter metrics if a filterType is selected
+  const filteredMetrics = useMemo(() => {
+    if (!filterType) return metrics;
+    return metrics.filter((m) => m.type === filterType);
+  }, [filterType, metrics]);
 
   const isSelected = (id: string) => selectedIds.includes(id);
+  const visibleSelectedIds = filteredMetrics
+    .map((m) => m.id)
+    .filter((id) => selectedIds.includes(id));
+  const allVisibleSelected = filteredMetrics.length > 0 && visibleSelectedIds.length === filteredMetrics.length;
 
   const handleToggle = (id: string) => {
     setSelectedIds((prev) =>
@@ -37,11 +61,15 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
     );
   };
 
-  const handleSelectAll = () => {
-    if (selectedIds.length === metrics.length) {
-      setSelectedIds([]);
+  const handleSelectAllVisible = () => {
+    const visibleIds = filteredMetrics.map((m) => m.id);
+    if (visibleIds.every((id) => selectedIds.includes(id))) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
     } else {
-      setSelectedIds(metrics.map((m) => m.id));
+      setSelectedIds((prev) => [
+        ...prev,
+        ...visibleIds.filter((id) => !prev.includes(id)),
+      ]);
     }
   };
 
@@ -90,9 +118,27 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Export Health Metrics</DialogTitle>
+          <DialogDescription>
+            Select and export your health metrics to PDF.
+          </DialogDescription>
         </DialogHeader>
+        <div className="mb-2 flex items-center gap-3 text-sm text-muted-foreground">
+          <Filter className="w-4 h-4" />
+          <span>Filter metrics by type:</span>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={""}>All</SelectItem>
+              {metricTypes.map((type) => (
+                <SelectItem key={type} value={type}>{type}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="mb-2 text-sm text-muted-foreground">
-          Select which metrics you want to export.
+          Select which metrics to export below.
         </div>
         <div className="max-h-80 overflow-auto">
           <Table>
@@ -101,8 +147,8 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
                 <TableHead>
                   <input
                     type="checkbox"
-                    checked={selectedIds.length === metrics.length && metrics.length > 0}
-                    onChange={handleSelectAll}
+                    checked={allVisibleSelected}
+                    onChange={handleSelectAllVisible}
                   />
                 </TableHead>
                 <TableHead>Date</TableHead>
@@ -112,14 +158,14 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {metrics.length === 0 ? (
+              {filteredMetrics.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center">
                     No health metrics found.
                   </TableCell>
                 </TableRow>
               ) : (
-                metrics.map((metric) => (
+                filteredMetrics.map((metric) => (
                   <TableRow key={metric.id} className={isSelected(metric.id) ? "bg-accent" : ""}>
                     <TableCell>
                       <input
@@ -154,3 +200,4 @@ const ExportMetricsModal: React.FC<ExportMetricsModalProps> = ({
 };
 
 export default ExportMetricsModal;
+

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -99,7 +98,8 @@ const Prescriptions = () => {
 
               <MedicationsList medications={filteredMedications} />
 
-              {filteredMedications.length === 0 && !searchTerm && (
+              {/* Only show ONE empty state for no medications, following prescription tab logic */}
+              {filteredMedications.length === 0 && (
                 <Card className="border-dashed">
                   <CardContent className="pt-6 text-center text-muted-foreground">
                     No active medications
@@ -107,13 +107,6 @@ const Prescriptions = () => {
                 </Card>
               )}
 
-              {filteredMedications.length === 0 && searchTerm && (
-                <Card className="border-dashed">
-                  <CardContent className="pt-6 text-center text-muted-foreground">
-                    No medications found
-                  </CardContent>
-                </Card>
-              )}
             </TabsContent>
 
             <TabsContent value="prescriptions" className="space-y-4">
@@ -225,4 +218,3 @@ const Prescriptions = () => {
 };
 
 export default Prescriptions;
-
