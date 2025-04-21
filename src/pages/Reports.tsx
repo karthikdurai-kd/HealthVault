@@ -5,7 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, FileText, Calendar, Search, Download, User, Filter } from "lucide-react";
+import { Plus, FileText, Calendar, Search, Download, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReports } from "@/hooks/useReports";
 import { useDoctors } from "@/hooks/useDoctors";
@@ -20,7 +20,7 @@ const Reports = () => {
   const { data: doctors = [] } = useDoctors();
   const [showReportForm, setShowReportForm] = useState(false);
 
-  const filteredReports = reports.filter(report => {
+  const filteredReports = reports.filter((report) => {
     const matchesSearch =
       report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (report.doctor?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,6 +30,12 @@ const Reports = () => {
 
     return matchesSearch && matchesType;
   });
+
+  // Function to download or view report file
+  const handleDownloadFile = (fileUrl: string | null) => {
+    if (!fileUrl) return;
+    window.open(fileUrl, "_blank");
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,12 +50,9 @@ const Reports = () => {
                 Store and access your medical reports and test results
               </p>
             </div>
-            <Button className="gap-2" onClick={() => setShowReportForm(true)}>
-              <Plus className="h-4 w-4" />
-              Upload Report
-            </Button>
+            {/* Removed Upload Report button */}
           </div>
-          
+
           {/* Search and Filter */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="relative flex-1">
@@ -62,7 +65,7 @@ const Reports = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div className="flex w-full items-center gap-2 sm:w-auto">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={selectedType} onValueChange={setSelectedType}>
@@ -79,49 +82,51 @@ const Reports = () => {
               </Select>
             </div>
           </div>
-          
+
           {/* Reports Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <div>Loading...</div>
-            ) : filteredReports.map((report) => {
-                return (
-                  <Card key={report.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-base">{report.title}</CardTitle>
-                          <CardDescription>{report.type}</CardDescription>
-                        </div>
-                        <FileText className="h-5 w-5 text-muted-foreground" />
+            ) : filteredReports.map((report) => (
+                <Card key={report.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-base">{report.title}</CardTitle>
+                        <CardDescription>{report.type}</CardDescription>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>{report.date ? new Date(report.date).toLocaleDateString() : ""}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{report.doctor.name}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground ml-6">
-                          {report.hospital}
-                        </div>
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>{report.date ? new Date(report.date).toLocaleDateString() : ""}</span>
                       </div>
-                    </CardContent>
-                    <CardFooter className="border-t p-3">
-                      <Button variant="outline" size="sm" className="w-full gap-2">
-                        <Download className="h-4 w-4" />
-                        Download Report
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
+                      <div className="flex items-center gap-2 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{report.doctor.name}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground ml-6">{report.hospital}</div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t p-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => handleDownloadFile(report.file_url)}
+                      disabled={!report.file_url}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Report
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
           </div>
-          
+
           {/* Empty State */}
           {filteredReports.length === 0 && (
             <Card className="border-dashed">
@@ -129,7 +134,7 @@ const Reports = () => {
                 <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
                 <h3 className="mt-3 text-lg font-medium">No reports found</h3>
                 <p className="mb-4 mt-1 text-sm text-muted-foreground">
-                  {searchTerm || selectedType !== "All Types" 
+                  {searchTerm || selectedType !== "All Types"
                     ? "Try adjusting your search or filters."
                     : "Upload medical reports to keep track of your test results."}
                 </p>
@@ -140,12 +145,9 @@ const Reports = () => {
               </CardContent>
             </Card>
           )}
-          
+
           {/* Add Report Form */}
-          <AddReportForm 
-            open={showReportForm} 
-            onOpenChange={setShowReportForm} 
-          />
+          <AddReportForm open={showReportForm} onOpenChange={setShowReportForm} />
         </main>
       </div>
     </div>

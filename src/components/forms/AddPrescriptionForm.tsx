@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,29 +13,40 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { 
+import {
   Dialog,
-  DialogContent, 
-  DialogHeader, 
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { useAddPrescription } from "@/hooks/useAddPrescription";
 import { useDoctors } from "@/hooks/useDoctors";
 import { useMedications } from "@/hooks/useMedications";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Download, FileText } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   doctor_id: z.string().min(1, "Doctor is required"),
   date: z.string().min(1, "Date is required"),
   expiry_date: z.string().min(1, "Expiry date is required"),
+  file: z
+    .any()
+    .optional()
+    .refine(
+      (file) =>
+        !file ||
+        (file instanceof File &&
+          ["application/pdf", "image/png", "image/jpeg"].includes(file.type)),
+      "Only PDF, PNG, or JPEG files are accepted"
+    ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,14 +67,18 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
   const [prescriptionMeds, setPrescriptionMeds] = useState<PrescriptionMedication[]>([]);
   const [currentMed, setCurrentMed] = useState<string>("");
   const [currentDuration, setCurrentDuration] = useState<string>("1 month");
-  
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
+
   const addPrescription = useAddPrescription();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       doctor_id: "",
       date: new Date().toISOString().split("T")[0],
       expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
+      file: undefined,
     },
   });
 
@@ -80,17 +96,52 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
     setPrescriptionMeds(prescriptionMeds.filter((_, i) => i !== index));
   };
 
-  const onSubmit = (data: FormValues) => {
+  // Upload file to Supabase Storage bucket 'prescriptions'
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { data, error } = await supabase.storage
+      .from("prescriptions")
+      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+
+    if (error) {
+      alert("Error uploading file: " + error.message);
+      setUploading(false);
+      return null;
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("prescriptions")
+      .getPublicUrl(fileName);
+
+    setUploading(false);
+    setUploadedFileUrl(publicUrlData.publicUrl);
+    return publicUrlData.publicUrl;
+  };
+
+  const onSubmit = async (data: FormValues) => {
+    let file_url = uploadedFileUrl;
+    if (data.file && data.file.length > 0) {
+      const uploadedUrl = await uploadFile(data.file[0]);
+      if (!uploadedUrl) return;
+      file_url = uploadedUrl;
+    }
+
     const prescription = {
-      ...data,
-      has_file: false, // For now, we're not handling file uploads
+      doctor_id: data.doctor_id,
+      date: data.date,
+      expiry_date: data.expiry_date,
+      has_file: !!file_url,
+      file_url: file_url || null,
       medications: prescriptionMeds,
     };
-    
+
     addPrescription.mutate(prescription, {
       onSuccess: () => {
         form.reset();
         setPrescriptionMeds([]);
+        setUploadedFileUrl(null);
         onOpenChange(false);
       },
     });
@@ -101,9 +152,9 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Add Prescription</DialogTitle>
-          <DialogDescription>Enter details for the new prescription.</DialogDescription>
+          <DialogDescription>Upload prescription data and add details.</DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -114,7 +165,7 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                   <FormLabel>Doctor</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -168,14 +219,40 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
               )}
             />
 
+            {/* File upload */}
+            <FormField
+              control={form.control}
+              name="file"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Upload Prescription File</FormLabel>
+                  <FormControl>
+                    <input
+                      type="file"
+                      accept=".pdf,image/png,image/jpeg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) field.onChange([file]);
+                      }}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-health-blue-100 file:text-health-blue-700
+                      hover:file:bg-health-blue-200
+                      "
+                    />
+                    {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-2">
               <h3 className="text-sm font-medium">Medications</h3>
-              
+
               <div className="flex gap-2">
-                <Select
-                  value={currentMed}
-                  onValueChange={setCurrentMed}
-                >
+                <Select value={currentMed} onValueChange={setCurrentMed}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select medication" />
                   </SelectTrigger>
@@ -193,11 +270,8 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                     )}
                   </SelectContent>
                 </Select>
-                
-                <Select
-                  value={currentDuration}
-                  onValueChange={setCurrentDuration}
-                >
+
+                <Select value={currentDuration} onValueChange={setCurrentDuration}>
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="Duration" />
                   </SelectTrigger>
@@ -210,29 +284,26 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
                     <SelectItem value="6 months">6 months</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Button 
-                  type="button" 
-                  size="icon" 
-                  onClick={addMedicationToPrescription}
-                  disabled={!currentMed}
-                >
+
+                <Button type="button" size="icon" onClick={addMedicationToPrescription} disabled={!currentMed}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               {prescriptionMeds.length > 0 && (
                 <div className="rounded-md border p-4 mt-2">
                   <ul className="space-y-2">
                     {prescriptionMeds.map((med, index) => {
-                      const medication = medications.find(m => m.id === med.medication_id);
+                      const medication = medications.find((m) => m.id === med.medication_id);
                       return (
                         <li key={index} className="flex items-center justify-between">
-                          <span>{medication?.name} ({medication?.dosage}) - {med.duration}</span>
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm" 
+                          <span>
+                            {medication?.name} ({medication?.dosage}) - {med.duration}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => removeMedicationFromPrescription(index)}
                           >
                             <X className="h-4 w-4" />
@@ -246,18 +317,11 @@ export function AddPrescriptionForm({ open, onOpenChange }: AddPrescriptionFormP
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={addPrescription.isPending}
-              >
-                {addPrescription.isPending ? "Saving..." : "Add Prescription"}
+              <Button type="submit" disabled={addPrescription.isPending || uploading}>
+                {addPrescription.isPending || uploading ? "Saving..." : "Add Prescription"}
               </Button>
             </div>
           </form>

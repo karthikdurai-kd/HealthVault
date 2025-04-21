@@ -209,6 +209,7 @@ export type Database = {
           date: string
           doctor_id: string
           expiry_date: string
+          file_url: string | null
           has_file: boolean
           id: string
           updated_at: string
@@ -219,6 +220,7 @@ export type Database = {
           date: string
           doctor_id: string
           expiry_date: string
+          file_url?: string | null
           has_file?: boolean
           id?: string
           updated_at?: string
@@ -229,6 +231,7 @@ export type Database = {
           date?: string
           doctor_id?: string
           expiry_date?: string
+          file_url?: string | null
           has_file?: boolean
           id?: string
           updated_at?: string
@@ -273,6 +276,7 @@ export type Database = {
           created_at: string
           date: string
           doctor_id: string
+          file_url: string | null
           has_file: boolean
           hospital: string
           id: string
@@ -285,6 +289,7 @@ export type Database = {
           created_at?: string
           date: string
           doctor_id: string
+          file_url?: string | null
           has_file?: boolean
           hospital: string
           id?: string
@@ -297,6 +302,7 @@ export type Database = {
           created_at?: string
           date?: string
           doctor_id?: string
+          file_url?: string | null
           has_file?: boolean
           hospital?: string
           id?: string

@@ -1,13 +1,12 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import HealthStatsGrid from "@/components/dashboard/HealthStatsGrid";
 import HealthMetricsChart from "@/components/dashboard/HealthMetricsChart";
 import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
-import RecentMedications from "@/components/dashboard/RecentMedications";
-import { Upload, Plus } from "lucide-react";
+// Removed RecentMedications import
+// Removed Upload, Plus icons (buttons removed)
 import { useLatestMetrics } from "@/hooks/useLatestMetrics";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AddHealthMetricForm } from "@/components/forms/AddHealthMetricForm";
@@ -24,33 +23,14 @@ const Index = () => {
       <div className="flex flex-1">
         <Sidebar />
         <main className="flex-1 space-y-4 p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back! Here's an overview of your health
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => setShowReportForm(true)}
-              >
-                <Upload className="h-4 w-4" />
-                Upload Report
-              </Button>
-              <Button 
-                className="gap-2"
-                onClick={() => setShowHealthMetricForm(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add Health Data
-              </Button>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back! Here's an overview of your health
+            </p>
           </div>
-          
-          {/* Removed notification/reminder block */}
+
+          {/* Removed Buttons for Upload Report and Add Health Data */}
 
           {/* Health Stats Grid */}
           <HealthStatsGrid latestMetrics={metrics} loading={loading}/>
@@ -63,8 +43,7 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Medications */}
-          <RecentMedications />
+          {/* Removed RecentMedications */}
           
           {/* Dialog for Health Metric Form */}
           <Dialog open={showHealthMetricForm} onOpenChange={setShowHealthMetricForm}>
@@ -88,3 +67,4 @@ const Index = () => {
 };
 
 export default Index;
+
