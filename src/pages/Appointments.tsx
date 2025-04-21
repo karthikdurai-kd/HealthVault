@@ -9,15 +9,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { ScheduleAppointmentForm } from "@/components/forms/ScheduleAppointmentForm";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Appointments = () => {
-  const { data: appointments = [], isLoading } = useAppointments();
+  const { data: appointments = [], isLoading, refetch } = useAppointments();
   const { data: doctors = [] } = useDoctors();
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const { toast } = useToast();
 
-  // Sample appointments data
   const upcomingAppointments = appointments.filter(apt => apt.status === "upcoming");
   const pastAppointments = appointments.filter(apt => apt.status === "past");
+
+  async function handleCancel(id: string) {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: "past" })
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Could not cancel appointment.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Appointment cancelled",
+        description: "Your appointment has been cancelled.",
+      });
+      refetch();
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -71,8 +94,8 @@ const Appointments = () => {
                             </div>
                           </div>
                           <div className="mt-4 flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1">Reschedule</Button>
-                            <Button variant="outline" size="sm" className="flex-1">Cancel</Button>
+                            {/* Only show Cancel button */}
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleCancel(appointment.id)}>Cancel</Button>
                           </div>
                         </CardContent>
                       </Card>
