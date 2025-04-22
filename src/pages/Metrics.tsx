@@ -11,6 +11,7 @@ import ExportMetricsModal from "@/components/metrics/ExportMetricsModal";
 import { Edit, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useDeleteHealthMetric } from "@/hooks/useDeleteHealthMetric";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 // These must match the backend
 const metricTypes = [
@@ -43,6 +44,8 @@ const Metrics = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const deleteMetric = useDeleteHealthMetric();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
 
   // Fetch metrics from Supabase on mount/refresh
   useEffect(() => {
@@ -116,6 +119,16 @@ const Metrics = () => {
     }
   };
 
+  const totalPages = Math.ceil(metrics.length / itemsPerPage);
+  const paginatedMetrics = metrics.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -186,7 +199,7 @@ const Metrics = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    metrics.map((metric) => (
+                    paginatedMetrics.map((metric) => (
                       <TableRow key={metric.id}>
                         <TableCell>{new Date(metric.date).toLocaleDateString()}</TableCell>
                         <TableCell>{metric.type}</TableCell>
@@ -217,6 +230,38 @@ const Metrics = () => {
               </Table>
               {!loading && !error && metrics.length === 0 && (
                 <div className="text-center text-muted-foreground mt-6">No health metrics found. Add your first entry!</div>
+              )}
+              {!loading && !error && metrics.length > 0 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <PaginationItem key={page}>
+                          <PaginationLink 
+                            isActive={currentPage === page}
+                            onClick={() => handlePageChange(page)}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
               )}
             </CardContent>
           </Card>
