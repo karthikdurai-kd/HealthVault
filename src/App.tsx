@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,8 @@ import Appointments from "./pages/Appointments";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import { ProtectedRoute } from "./components/routes/ProtectedRoute";
+import React from 'react';
+import AIChat from './pages/AIChat';
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-chat"
+            element={
+              <ProtectedRoute>
+                <AIChat />
               </ProtectedRoute>
             }
           />
