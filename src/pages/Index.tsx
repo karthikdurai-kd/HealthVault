@@ -1,17 +1,14 @@
-
 import React, { useState } from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import HealthStatsGrid from "@/components/dashboard/HealthStatsGrid";
 import HealthMetricsChart from "@/components/dashboard/HealthMetricsChart";
-import UpcomingAppointments from "@/components/dashboard/UpcomingAppointments";
 import { useLatestMetrics } from "@/hooks/useLatestMetrics";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AddHealthMetricForm } from "@/components/forms/AddHealthMetricForm";
 import { AddReportForm } from "@/components/forms/AddReportForm";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, Activity, Calendar, FileText, Pill } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Activity, Calendar, FileText, Pill } from "lucide-react"      
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -40,11 +37,11 @@ const Index = () => {
           <HealthStatsGrid latestMetrics={metrics} loading={loading}/>
 
           {/* Main Content Grid */}
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-2">
             <HealthMetricsChart />
-            <div className="space-y-4 md:col-span-1">
-              <UpcomingAppointments />
-            </div>
+            {/* <div className="space-y-4 md:col-span-1">
+              <HealthGoals />
+            </div> */}
           </div>
 
           {/* Quick Access Cards */}
