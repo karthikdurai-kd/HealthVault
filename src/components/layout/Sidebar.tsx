@@ -8,7 +8,8 @@ import {
   PieChart,
   Stethoscope,
   Calendar,
-  Settings
+  Settings,
+  MessageSquare
 } from "lucide-react";
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
   { name: "Prescriptions", href: "/prescriptions", icon: FileText },
   { name: "Reports", href: "/reports", icon: PieChart },
   { name: "Appointments", href: "/appointments", icon: Calendar },
+    { name: "AI Chat", href: "/ai-chat", icon: MessageSquare },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

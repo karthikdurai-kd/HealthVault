@@ -2,7 +2,7 @@
 import React from 'react';
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import HealthAIChat from "@/components/HealthAIChat";
+import HealthAIChat from "@/components/AIChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AIChat: React.FC = () => {
