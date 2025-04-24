@@ -45,8 +45,6 @@ interface HealthMetricsChartProps {
   description?: string;
 }
 
-
-
 const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({
   forceRefresh,
   metricKey,
@@ -63,6 +61,7 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({
   const [timeRange, setTimeRange] = useState("month");
   const [chartType, setChartType] = useState("line");
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [availableMetrics, setAvailableMetrics] = useState<string[]>([]);
 
   // Helper function to fix the timezone issue and ensure dates are consistent
   const fixDateTimezone = (dateString: string) => {
@@ -131,6 +130,37 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({
     
     fetchMetrics();
   }, [selectedMetric, timeRange, forceRefresh]);
+
+  // fetch available metrics
+  useEffect(() => {
+    async function fetchAvailableMetrics() {
+      try {
+        const { data: distinctMetrics, error } = await supabase
+          .from('health_metrics')
+          .select('type')
+          .order('type')
+          .not('value', 'is', null);
+        
+        if (!error && distinctMetrics) {
+          const metricKeys = Object.entries(typeMap)
+            .filter(([key, value]) => 
+              distinctMetrics.some(m => m.type === value))
+            .map(([key]) => key);
+          
+          setAvailableMetrics(metricKeys);
+          
+          // filter out the selected metric if it's not in the available metrics
+          if (metricKeys.length > 0 && !metricKeys.includes(selectedMetric)) {
+            setSelectedMetric(metricKeys[0]);
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching available metrics", e);
+      }
+    }
+    
+    fetchAvailableMetrics();
+  }, [forceRefresh, selectedMetric]);
 
   // Draw the chart when data changes
   useEffect(() => {
@@ -390,11 +420,13 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({
                 <SelectValue placeholder="Select metric" />
               </SelectTrigger>
               <SelectContent>
-                {metricOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                {metricOptions
+                  .filter(option => availableMetrics.includes(option.value))
+                  .map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -445,7 +477,7 @@ const HealthMetricsChart: React.FC<HealthMetricsChartProps> = ({
         {!mini && !loading && !error && data.length > 0 && (
           <div className="flex justify-between items-center text-sm text-muted-foreground mt-4">
             <div>
-              <span className="font-medium">Latest:</span> {data[data.length - 1].value} ({data[data.length - 1].date})
+              <span className="font-medium">Latest:</span> {data[data.length - 1].value} ({data[data.length - 1].dateObj.toLocaleDateString()})
             </div>
             <div>
               Showing {data.length} data points ({timeRange})

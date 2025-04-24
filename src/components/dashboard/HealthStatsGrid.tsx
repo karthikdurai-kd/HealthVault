@@ -5,14 +5,45 @@ interface Props {
   loading: boolean;
 }
 
+// Date format for the health stats grid
 function formatRecency(dateStr?: string) {
   if (!dateStr) return "-";
-  const date = new Date(dateStr);
+  
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  
+  const date = new Date(
+    parseInt(parts[0]), 
+    parseInt(parts[1]) - 1, 
+    parseInt(parts[2])
+  );
+  
   const now = new Date();
-  const diff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff <= 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return `${diff} days ago`;
+  
+  // Compare year, month, and day
+  const isToday = 
+    date.getFullYear() === now.getFullYear() && 
+    date.getMonth() === now.getMonth() && 
+    date.getDate() === now.getDate();
+  
+  if (isToday) return "Today";
+  
+  // Calculate yesterday
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  
+  const isYesterday = 
+    date.getFullYear() === yesterday.getFullYear() && 
+    date.getMonth() === yesterday.getMonth() && 
+    date.getDate() === yesterday.getDate();
+  
+  if (isYesterday) return "Yesterday";
+  
+  // For older dates, calculate day difference
+  const diffTime = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  return `${diffDays} days ago`;
 }
 
 const metricInfo = [
