@@ -19,6 +19,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { DeleteDoctorAlert } from "@/components/doctors/DeleteDoctorAlert";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -30,6 +32,9 @@ const Doctors = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [doctorToDelete, setDoctorToDelete] = useState<{ id: string; name: string } | null>(null);
+  const queryClient = useQueryClient();
 
   const filteredDoctors = data.filter(doctor =>
     doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,19 +91,44 @@ const Doctors = () => {
     }
   };
 
-  async function handleDeleteDoctor(id: string) {
-    setDeletingId(id);
-    // Confirm deletion
-    if (!window.confirm("Are you sure you want to delete this doctor?")) {
+  async function handleDeleteDoctor(id: string, name: string) {
+    setDoctorToDelete({ id, name });
+    setShowDeleteAlert(true);
+  }
+
+  async function confirmDelete() {
+    if (!doctorToDelete) return;
+    
+    setDeletingId(doctorToDelete.id);
+    
+    // First delete all appointments associated with this doctor
+    const { error: appointmentsError } = await supabase
+      .from("appointments")
+      .delete()
+      .eq("doctor_id", doctorToDelete.id);
+
+    if (appointmentsError) {
+      toast({
+        title: "Error",
+        description: "Failed to delete associated appointments.",
+        variant: "destructive",
+      });
       setDeletingId(null);
+      setDoctorToDelete(null);
+      setShowDeleteAlert(false);
       return;
     }
 
-    const { error } = await supabase.from("doctors").delete().eq("id", id);
-    if (!error) {
+    // Then delete the doctor
+    const { error: doctorError } = await supabase
+      .from("doctors")
+      .delete()
+      .eq("id", doctorToDelete.id);
+    
+    if (!doctorError) {
       toast({
         title: "Success",
-        description: "Doctor deleted.",
+        description: "Doctor and associated appointments deleted successfully.",
       });
       
       // Check if this was the last item on the current page
@@ -106,7 +136,9 @@ const Doctors = () => {
         setCurrentPage(currentPage - 1);
       }
       
+      // Invalidate both doctors and appointments queries
       refetch?.();
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
     } else {
       toast({
         title: "Error",
@@ -114,7 +146,10 @@ const Doctors = () => {
         variant: "destructive",
       });
     }
+    
     setDeletingId(null);
+    setDoctorToDelete(null);
+    setShowDeleteAlert(false);
   }
 
   return (
@@ -270,6 +305,16 @@ const Doctors = () => {
             open={showDoctorForm} 
             onOpenChange={setShowDoctorForm} 
           />
+          
+          {/* Delete Doctor Alert */}
+          {doctorToDelete && (
+            <DeleteDoctorAlert
+              open={showDeleteAlert}
+              onOpenChange={setShowDeleteAlert}
+              onConfirm={confirmDelete}
+              doctorName={doctorToDelete.name}
+            />
+          )}
         </main>
       </div>
     </div>

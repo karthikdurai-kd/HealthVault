@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
@@ -9,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 
 type FormValues = {
   display_name: string;
-  avatar_url: string;
   email?: string;
 };
 
@@ -33,7 +31,7 @@ export function SettingsForm() {
       const userId = sessionData.session.user.id;
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url")
+        .select("display_name")
         .eq("id", userId)
         .single();
       if (error) {
@@ -45,7 +43,6 @@ export function SettingsForm() {
       } else {
         reset({
           display_name: data.display_name || "",
-          avatar_url: data.avatar_url || "",
         });
       }
     }
@@ -66,11 +63,14 @@ export function SettingsForm() {
     try {
       const updates = {
         id: userId,
-        display_name: values.display_name,
-        avatar_url: values.avatar_url,
+        display_name: values.display_name || null,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("profiles").upsert(updates);
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq('id', userId);
+      
       if (error) throw error;
       toast({ title: "Success", description: "Profile updated" });
     } catch (error: any) {
@@ -110,10 +110,6 @@ export function SettingsForm() {
       <div>
         <Label htmlFor="display_name">Display Name</Label>
         <Input id="display_name" {...register("display_name")} />
-      </div>
-      <div>
-        <Label htmlFor="avatar_url">Avatar URL</Label>
-        <Input id="avatar_url" {...register("avatar_url")} />
       </div>
       <div>
         <Label>Email Address</Label>

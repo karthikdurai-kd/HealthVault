@@ -16,7 +16,7 @@ interface Doctor {
 
 interface DoctorCardProps {
   doctor: Doctor;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string, name: string) => void;
 }
 
 const DoctorCard = ({ doctor, onDelete }: DoctorCardProps) => {
@@ -62,7 +62,7 @@ const DoctorCard = ({ doctor, onDelete }: DoctorCardProps) => {
           variant="outline"
           size="sm"
           className="w-full"
-          onClick={() => onDelete && onDelete(doctor.id)}
+          onClick={() => onDelete && onDelete(doctor.id, doctor.name)}
         >
           <Trash2 className="h-4 w-4 mr-1" />
           Delete
