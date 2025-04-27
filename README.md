@@ -1,73 +1,138 @@
-# Welcome to your Lovable project
+# 🏥 HealthVault - Personal Healthcare Management System
 
-## Project info
+HealthVault is a comprehensive healthcare management application that helps users track their medical records, manage doctor appointments, and monitor health metrics in one centralized platform.
 
-**URL**: https://lovable.dev/projects/cf99355d-a38e-4298-ae5e-e818386a1185
+## 🌟 Features
 
-## How can I edit this code?
+### 👨‍⚕️ Doctor Management
+- Add and manage healthcare providers
+- Track doctor specialties and contact information
+- View doctor visit history
+- Delete doctors with associated appointments
 
-There are several ways of editing your application.
+### 📅 Appointment Tracking
+- Schedule and manage medical appointments
+- View upcoming appointments
+- Track appointment status
+- Automatic appointment cleanup when doctor is removed
 
-**Use Lovable**
+### 📊 Health Metrics
+- Log and monitor vital health parameters
+- Support for multiple metric types:
+  - Blood Pressure
+  - Blood Sugar
+  - Weight
+  - Cholesterol
+  - Hemoglobin
+  - Creatinine
+  - Heart Rate
+  - Oxygen Saturation
+- Export health metrics data
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cf99355d-a38e-4298-ae5e-e818386a1185) and start prompting.
+## 📊 Data Visualization
 
-Changes made via Lovable will be committed automatically to this repo.
+### Charts and Metrics Tracking
+Used D3.js for powerful and interactive data visualization, particularly in the Health Metrics section.
 
-**Use your preferred IDE**
+#### Health Metrics Chart Features
+- **Interactive Charts**
+  - Smooth animations and transitions
+  - Interactive tooltips showing detailed data points
+  - Responsive design that adapts to container size
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Time Range Filtering**
+  - Week view 
+  - Month view 
+  - Year view
+  - All-time view
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Data Processing**
+  - Automatic date normalization
+  - Timezone handling
+  - Value aggregation for longer time periods
 
-Follow these steps:
+## 🛠 Technology Stack
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Frontend
+- **React** - UI Library
+- **TypeScript** - Type Safety
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - UI Components
+- **Lucide Icons** - Icon System
+- **D3.js** - Chart library
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### State Management
+- **TanStack Query (React Query)** - Server State Management
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Backend & Database
+- **Supabase** 
+  - Database
+  - Authentication
+  - Real-time Updates
+  - Row Level Security
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 📦 Project Structure
+
+```text
+src/
+├── components/
+│   ├── doctors/
+│   ├── forms/
+│   ├── layout/
+│   ├── metrics/
+│   └── ui/
+├── hooks/
+├── integrations/
+│   └── supabase/
+├── pages/
+└── styles/
 ```
 
-**Edit a file directly in GitHub**
+## 🔄 State Management Details
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### React Query
+- Handles server state
+- Manages data fetching and caching
+- Automatic background refetching
 
-**Use GitHub Codespaces**
+## 🚀 Getting Started
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Supabase account
 
-## What technologies are used for this project?
+### Installation
 
-This project is built with:
+1. Clone the repository
+```bash
+git clone git@github.com:karthikdurai-kd/HealthVault.git
+cd HealthVault
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
 
-## How can I deploy this project?
+3. Set up environment variables
+```bash
+cp .env.example .env
+```
+Add your Supabase credentials to the `.env` file:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-Simply open [Lovable](https://lovable.dev/projects/cf99355d-a38e-4298-ae5e-e818386a1185) and click on Share -> Publish.
+4. Start the development server
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-## Can I connect a custom domain to my Lovable project?
 
-Yes, you can!
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
