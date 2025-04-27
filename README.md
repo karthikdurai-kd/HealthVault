@@ -1,6 +1,6 @@
 # 🏥 HealthVault - Personal Healthcare Management System
 
-HealthVault is a comprehensive healthcare management application that helps users track their medical records, manage doctor appointments, and monitor health metrics in one centralized platform.
+HealthVault is a comprehensive healthcare management application that helps users track their medical records, manage doctor appointments, monitor health metrics, and get AI-powered health assistance in one centralized platform.
 
 ## 🌟 Features
 
@@ -28,6 +28,21 @@ HealthVault is a comprehensive healthcare management application that helps user
   - Heart Rate
   - Oxygen Saturation
 - Export health metrics data
+
+### 🤖 AI Health Assistant
+- Interactive chat interface for health-related queries
+- Real-time AI responses powered by OpenAI GPT-4
+- Intelligent health topic validation system:
+  - Comprehensive medical terminology detection
+  - Automatic non-health topic filtering
+  - Context-aware follow-up handling
+- Rich text formatting with Markdown support:
+  - Structured medical information
+  - Emphasis for important details
+  - Headers for organized responses
+- User-friendly interface:
+  - Error handling and recovery
+  - Auto-scroll to latest messages
 
 ## 📊 Data Visualization
 
@@ -61,15 +76,20 @@ Used D3.js for powerful and interactive data visualization, particularly in the 
 - **Lucide Icons** - Icon System
 - **D3.js** - Chart library
 
-### State Management
-- **TanStack Query (React Query)** - Server State Management
-
 ### Backend & Database
 - **Supabase** 
   - Database
   - Authentication
   - Real-time Updates
   - Row Level Security
+
+### AI Integration
+- **OpenAI** - GPT-4 API for intelligent health responses
+- **Supabase Edge Functions** - Secure API key handling and request processing
+- **TanStack Query** - Chat state management and caching
+
+### State Management
+- **TanStack Query (React Query)** - Server State Management
 
 ## 📦 Project Structure
 
