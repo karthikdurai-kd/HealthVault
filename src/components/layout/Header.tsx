@@ -1,7 +1,4 @@
 
-import { Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import UserMenu from "@/components/layout/UserMenu";
 import { Link } from "react-router-dom";
 const Header = () => {
@@ -14,12 +11,7 @@ const Header = () => {
         </Link>
       </div>
       <div className="flex items-center gap-4">
-        {/* Removed Bell/Notification button */}
-        <Button variant="ghost" size="icon" asChild>
-          <a href="/settings" aria-label="Settings">
-            <Settings className="h-5 w-5" />
-          </a>
-        </Button>
+        {/* User Menu */}
         <UserMenu />
       </div>
     </header>
