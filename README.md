@@ -86,7 +86,6 @@ Used D3.js for powerful and interactive data visualization, particularly in the 
 ### AI Integration
 - **OpenAI** - GPT-4 API for intelligent health responses
 - **Supabase Edge Functions** - Secure API key handling and request processing
-- **TanStack Query** - Chat state management and caching
 
 ### State Management
 - **TanStack Query (React Query)** - Server State Management
