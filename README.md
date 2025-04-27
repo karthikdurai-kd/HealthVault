@@ -88,7 +88,11 @@ Used D3.js for powerful and interactive data visualization, particularly in the 
 - **Supabase Edge Functions** - Secure API key handling and request processing
 
 ### State Management
-- **TanStack Query (React Query)** - Server State Management
+- **TanStack Query**
+   - Server State Management
+   - Manages data fetching and caching
+   - Automatic background refetching
+
 
 ## 📦 Project Structure
 
@@ -107,19 +111,14 @@ src/
 └── styles/
 ```
 
-## 🔄 State Management Details
-
-### React Query
-- Handles server state
-- Manages data fetching and caching
-- Automatic background refetching
-
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm or yarn
 - Supabase account
+- OpenAI account with API access
+
 
 ### Installation
 
@@ -140,10 +139,14 @@ yarn install
 ```bash
 cp .env.example .env
 ```
-Add your Supabase credentials to the `.env` file:
+Add your Supabase and OpenAI credentials to the `.env` file:
 ```env
+# Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 4. Start the development server
