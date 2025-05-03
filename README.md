@@ -14,7 +14,7 @@ HealthVault is a comprehensive healthcare management application that helps user
 - Schedule and manage medical appointments
 - View upcoming appointments
 - Track appointment status
-- Automatic appointment cleanup when doctor is removed
+- Automatically clean up all appointments associated with a deleted doctor
 
 ### 📊 Health Metrics
 - Log and monitor vital health parameters
@@ -27,7 +27,9 @@ HealthVault is a comprehensive healthcare management application that helps user
   - Creatinine
   - Heart Rate
   - Oxygen Saturation
-- Export health metrics data
+- Export health metrics data as PDF reports
+- Historical trend analysis
+- Upload and store medical prescriptions
 
 ### 🤖 AI Health Assistant
 - Interactive chat interface for health-related queries
@@ -75,6 +77,7 @@ Used D3.js for powerful and interactive data visualization, particularly in the 
 - **shadcn/ui** - UI Components
 - **Lucide Icons** - Icon System
 - **D3.js** - Chart library
+- **jsPDF** - PDF generation and export
 
 ### Backend & Database
 - **Supabase** 
@@ -82,6 +85,7 @@ Used D3.js for powerful and interactive data visualization, particularly in the 
   - Authentication
   - Real-time Updates
   - Row Level Security
+  - Storage buckets
 
 ### AI Integration
 - **OpenAI** - GPT-4 API for intelligent health responses
