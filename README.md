@@ -115,6 +115,11 @@ src/
 └── styles/
 ```
 
+## 🌐 Live Demo
+
+Check out the live version of HealthVault:
+[https://health-vault-ai.vercel.app](https://health-vault-ai.vercel.app)
+
 ## 🚀 Getting Started
 
 ### Prerequisites
