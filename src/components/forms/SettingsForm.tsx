@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-
+import { useNavigate } from "react-router-dom";
 type FormValues = {
   display_name: string;
   email?: string;
@@ -15,7 +15,7 @@ export function SettingsForm() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [resetting, setResetting] = useState(false);
-
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -102,7 +102,7 @@ export function SettingsForm() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/auth";
+    navigate("/auth");
   };
 
   return (

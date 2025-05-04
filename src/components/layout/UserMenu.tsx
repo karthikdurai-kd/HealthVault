@@ -39,7 +39,7 @@ const UserMenu = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/auth";
+    navigate("/auth");
   };
 
   return (

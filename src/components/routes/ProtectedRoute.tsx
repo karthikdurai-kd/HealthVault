@@ -1,6 +1,5 @@
-
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 type ProtectedRouteProps = {
@@ -8,18 +7,21 @@ type ProtectedRouteProps = {
 };
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const [session, setSession] = React.useState<null | any>(null);
+  const [session, setSession] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check session on mount
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
+    };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
     });
@@ -29,6 +31,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
   }, []);
 
+  
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center text-lg">
@@ -37,9 +40,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
+  // Redirect if no session (not authenticated)
   if (!session) {
-    return <Navigate to="/auth" replace />;
+    navigate("/auth", { replace: true });
+    return null; 
   }
 
-  return children;
+  return children; 
 };
